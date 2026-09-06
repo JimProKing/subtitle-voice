@@ -51,9 +51,14 @@ app.use((_req, res) => {
   res.status(404).type('text/plain').send('Not found');
 });
 
-await ensureTessdata();
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`자막소리 http://localhost:${PORT}`);
+  const publicHost = process.env.RAILWAY_PUBLIC_DOMAIN;
+  console.log(`자막소리 listening on 0.0.0.0:${PORT}`);
+  if (publicHost) console.log(`공개 주소 https://${publicHost}`);
+  else console.log('공개 주소 없음: Railway 서비스 Settings → Networking → Generate Domain');
+  ensureTessdata().catch((err) => {
+    console.warn('한글 OCR 데이터 준비 실패', err);
+  });
 });
 
 async function ensureTessdata() {

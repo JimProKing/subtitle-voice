@@ -17,8 +17,8 @@ npm start
 
 1. 이 폴더를 GitHub에 올립니다.
 2. [Railway](https://railway.app)에서 New Project → GitHub repo.
-3. Dockerfile이 있으면 그대로 빌드됩니다. 공개 URL은 HTTPS라 폰 카메라가 됩니다.
-4. 배포 후 폰 브라우저로 열고, 홈 화면에 추가하면 앱처럼 쓸 수 있습니다.
+3. 배포가 Success여도 접속 링크는 자동으로 안 생깁니다. 서비스 칸을 연 다음 **Settings → Networking → Public Networking → Generate Domain** 을 누르면 `https://….up.railway.app` 이 나옵니다.
+4. 그 주소는 HTTPS라 폰 카메라가 됩니다. 홈 화면에 추가하면 앱처럼 쓸 수 있습니다.
 
 ## 극장에서
 
