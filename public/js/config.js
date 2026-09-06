@@ -1,0 +1,33 @@
+export const CONFIG = {
+  analysisFps: 10,
+  stableFrames: 3,
+  sadStable: 11,
+  sadChanged: 22,
+  minHangul: 2,
+  minConfidence: 36,
+  minTextPixels: 0.003,
+  maxTextPixels: 0.28,
+  duplicateRatio: 0.84,
+  defaultRate: 1.15,
+  minRate: 0.8,
+  maxRate: 1.8,
+  rateStep: 0.05,
+  defaultVoiceId: 3,
+  voiceCount: 8,
+  unnamedHoldMs: 12000,
+  maxOcrWidth: 1000,
+  bottomBand: { top: 0.74, height: 0.24, inset: 0.07 },
+  topBand: { top: 0.03, height: 0.16, inset: 0.07 },
+  storageKey: 'subtitle-voice-v1',
+};
+
+export const VOICE_PRESETS = [
+  { id: 1, label: '목소리 1, 낮은 남성', pitch: 0.72, rateMul: 0.98 },
+  { id: 2, label: '목소리 2, 남성', pitch: 0.84, rateMul: 1.0 },
+  { id: 3, label: '목소리 3, 보통', pitch: 0.96, rateMul: 1.0 },
+  { id: 4, label: '목소리 4, 중성', pitch: 1.05, rateMul: 1.0 },
+  { id: 5, label: '목소리 5, 여성', pitch: 1.16, rateMul: 1.0 },
+  { id: 6, label: '목소리 6, 높은 여성', pitch: 1.3, rateMul: 1.02 },
+  { id: 7, label: '목소리 7, 낮은 중성', pitch: 0.78, rateMul: 0.94 },
+  { id: 8, label: '목소리 8, 또렷한 여성', pitch: 1.22, rateMul: 1.04 },
+];

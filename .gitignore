@@ -1,0 +1,9 @@
+node_modules/
+public/tessdata/
+scripts/*.png
+kor.traineddata
+kor.traineddata.gz
+.DS_Store
+*.log
+.env
+dist/

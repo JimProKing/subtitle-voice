@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070709" />
+    <meta name="description" content="극장 화면의 한글 자막을 카메라로 읽어 바로 소리로 들려주는 접근성 앱" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+    <meta name="apple-mobile-web-app-title" content="자막소리" />
+    <title>자막소리</title>
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/icon-512.jpg" />
+    <link rel="stylesheet" href="/css/app.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">본문으로 건너뛰기</a>
+    <div id="live-polite" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="live-assertive" class="sr-only" aria-live="assertive" aria-atomic="true"></div>
+
+    <div class="app">
+      <header>
+        <div class="brand">
+          <img src="/icons/icon-512.jpg" alt="" width="48" height="48" />
+          <div>
+            <h1>자막소리</h1>
+            <p class="lede">극장 한글 자막을 카메라로 읽어 바로 들려줍니다. 화면은 기기에만 잠시 머물고, 저장하거나 보내지 않습니다.</p>
+          </div>
+        </div>
+        <p id="status">대기 중</p>
+        <p id="engine-state">인식 엔진 준비 중</p>
+      </header>
+
+      <main id="main">
+        <section id="setup" class="setup" aria-labelledby="setup-title">
+          <h2 id="setup-title">사용 순서</h2>
+          <ol>
+            <li>이어폰을 끼고 휴대폰을 스크린이 꽉 차게 고정합니다.</li>
+            <li>시작을 누르면 카메라가 켜지고 아래 자막부터 찾습니다.</li>
+            <li>새 자막이 안정되면 바로 읽고, 다음 자막이 오면 이전 읽기를 끊습니다.</li>
+            <li>극장에서는 미리보기 끄기 또는 극장 모드를 권합니다.</li>
+          </ol>
+          <div class="cta-row">
+            <button type="button" class="primary" id="btn-start-camera">카메라로 시작</button>
+            <button type="button" class="ghost" id="btn-start-file">테스트 영상으로 시작</button>
+            <button type="button" class="ghost" id="btn-sample">지금 목소리 시험</button>
+          </div>
+          <input id="file-input" type="file" accept="video/*" hidden />
+          <p id="camera-error" class="error" hidden></p>
+          <p class="hint" id="voice-count">한국어 목소리는 이 기기에 있는 것을 쓰고, 부족한 칸은 높낮이로 나눕니다.</p>
+        </section>
+
+        <section id="stage" hidden>
+          <div id="preview-wrap" class="preview-wrap">
+            <video id="camera" autoplay muted playsinline></video>
+            <canvas id="overlay" aria-hidden="true"></canvas>
+          </div>
+          <div class="now" aria-hidden="true">
+            <p class="now-label">지금 읽는 말</p>
+            <p id="now-text">아직 없습니다</p>
+            <p id="now-meta"></p>
+          </div>
+        </section>
+      </main>
+
+      <footer id="controls" class="controls" hidden>
+        <button type="button" class="danger" id="btn-stop">정지</button>
+        <div class="control-grid">
+          <div class="metric">
+            <button type="button" id="btn-speed-down" aria-label="속도 낮추기">더 느리게</button>
+            <b id="speed-value">1.15</b>
+            <button type="button" id="btn-speed-up" aria-label="속도 높이기">더 빠르게</button>
+          </div>
+          <button type="button" id="btn-voice" aria-label="지금 목소리 변경">지금 목소리 변경</button>
+        </div>
+        <label class="hint" for="region-mode">자막 위치
+          <select id="region-mode">
+            <option value="auto">자동, 아래 우선</option>
+            <option value="bottom">아래만</option>
+            <option value="top">위만</option>
+          </select>
+        </label>
+        <div class="row">
+          <button type="button" class="ghost" id="btn-preview" aria-pressed="true">미리보기 끄기</button>
+          <button type="button" class="ghost" id="btn-theater" aria-pressed="false">극장 모드</button>
+          <button type="button" class="ghost" id="btn-debug" aria-pressed="false">테스트 정보</button>
+        </div>
+        <p class="kbd">단축키: 스페이스 시작/정지, 위아래 화살표 속도, V 목소리, Esc 정지</p>
+      </footer>
+
+      <section id="debug" class="panel debug" hidden>
+        <h2>테스트 정보</h2>
+        <p>분석 <b id="dbg-fps">0</b>회/초 · 구역 <b id="dbg-region">아래</b> · OCR <b id="dbg-ocr">0ms</b> · 안정 후 읽기 <b id="dbg-delay">0ms</b> · 신뢰 <b id="dbg-conf">-</b></p>
+        <p>정제 문장: <span id="dbg-text">-</span></p>
+        <p>OCR 원문: <span id="dbg-raw">-</span></p>
+        <img id="dbg-prep" alt="전처리된 자막 영역" />
+        <h3>배역 목소리</h3>
+        <ul id="role-list"></ul>
+      </section>
+    </div>
+    <script type="module" src="/js/app.js"></script>
+  </body>
+</html>

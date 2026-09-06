@@ -1,0 +1,18 @@
+{
+  "name": "subtitle-voice",
+  "version": "1.0.0",
+  "private": true,
+  "description": "극장 한글 자막을 카메라로 읽어 기기 TTS로 바로 들려주는 접근성 웹앱",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "tesseract.js": "^5.1.1"
+  }
+}
