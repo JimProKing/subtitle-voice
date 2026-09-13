@@ -220,25 +220,15 @@ function loop(now) {
   state.lastSample = now;
 
   if (!camera.drawFrame(state.frameCanvas)) return;
-  const prepared = pickRegion(state.frameCanvas);
   if (!ocr.isBusy() && now - state.lastOcrAt >= CONFIG.ocrIntervalMs) {
     state.lastOcrAt = now;
-    runOcr(prepared);
+    runOcr(state.frameCanvas);
   }
 }
 
-function pickRegion(frame) {
-  const mode = state.settings.regionMode;
-  if (mode === 'top') return preprocess.prepare(frame, 'top');
-  if (mode === 'bottom') return preprocess.prepare(frame, 'bottom');
-  const bottom = preprocess.prepare(frame, 'bottom');
-  if (!bottom.empty) return bottom;
-  return preprocess.prepare(frame, 'top');
-}
-
-async function runOcr(prepared) {
+async function runOcr(frameCanvas) {
   try {
-    const result = await ocr.recognize(prepared.canvas);
+    const result = await ocr.recognizeFrame(frameCanvas);
     if (!state.running || !result) return;
     const raw = (result.text || '').replace(/\s+/g, ' ').trim();
     const parsed = subtitle.parse(result.text, result.confidence);
@@ -246,7 +236,7 @@ async function runOcr(prepared) {
     if (!parsed) {
       $('now-meta').textContent = raw
         ? `인식 ${conf}점 · ${raw.slice(0, 36)}`
-        : `인식 ${conf}점 · 칸에서 글자를 못 찾음`;
+        : `인식 ${conf}점 · 자막 없음`;
       return;
     }
     if (subtitle.isDuplicate(parsed.speakText)) {
@@ -311,11 +301,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=12', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=13', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v12')) return;
-      sessionStorage.setItem('sw-reloaded-v12', '1');
+      if (sessionStorage.getItem('sw-reloaded-v13')) return;
+      sessionStorage.setItem('sw-reloaded-v13', '1');
       location.reload();
     });
   } catch {

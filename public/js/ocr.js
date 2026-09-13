@@ -1,4 +1,3 @@
-let worker = null;
 let busy = false;
 let ready = false;
 
@@ -11,63 +10,41 @@ export function isReady() {
 }
 
 export async function init(onProgress) {
-  if (worker) return;
-  const Tesseract = await loadTesseract();
-  worker = await Tesseract.createWorker('kor', 1, {
-    workerPath: '/vendor/tesseract/worker.min.js',
-    corePath: '/vendor/tesseract-core',
-    langPath: '/tessdata',
-    gzip: true,
-    logger: (m) => {
-      if (!onProgress) return;
-      if (typeof m.progress === 'number') {
-        onProgress(m.status || 'loading', m.progress);
-      }
-    },
-  });
-  await worker.setParameters({
-    tessedit_pageseg_mode: '6',
-    preserve_interword_spaces: '1',
-  });
   ready = true;
+  if (onProgress) onProgress('ready', 1);
 }
 
-export async function recognize(imageCanvas) {
-  if (!worker) throw new Error('ocr-not-ready');
+export async function recognizeFrame(srcCanvas) {
   if (busy) return null;
   busy = true;
   try {
-    const { data } = await worker.recognize(imageCanvas);
+    const jpeg = frameJpeg(srcCanvas);
+    const res = await fetch('/api/ocr', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: jpeg }),
+    });
+    if (!res.ok) throw new Error(`ocr ${res.status}`);
+    const data = await res.json();
     return {
       text: data.text || '',
       confidence: Number(data.confidence) || 0,
+      engine: data.engine || '',
     };
   } finally {
     busy = false;
   }
 }
 
-export async function dispose() {
-  ready = false;
-  if (worker) {
-    try {
-      await worker.terminate();
-    } catch {
-      /* ignore */
-    }
-  }
-  worker = null;
-  busy = false;
-}
-
-async function loadTesseract() {
-  if (window.Tesseract) return window.Tesseract;
-  await new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = '/vendor/tesseract/tesseract.min.js';
-    script.onload = resolve;
-    script.onerror = () => reject(new Error('tesseract-load-failed'));
-    document.head.appendChild(script);
-  });
-  return window.Tesseract;
+function frameJpeg(src) {
+  const maxW = 720;
+  const scale = Math.min(1, maxW / src.width);
+  const w = Math.max(2, Math.round(src.width * scale));
+  const h = Math.max(2, Math.round(src.height * scale));
+  const c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(src, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.72);
 }

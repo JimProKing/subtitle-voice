@@ -3,10 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { synthesize } from './tts-engine.js';
+import { ensureOcr, readSubtitle } from './ocr-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
-const APP_VERSION = process.env.APP_VERSION || '12';
+const APP_VERSION = process.env.APP_VERSION || '13';
 const TESSDATA_DIR = path.join(__dirname, 'public', 'tessdata');
 const TESSDATA_FILE = path.join(TESSDATA_DIR, 'kor.traineddata.gz');
 const TESSDATA_URLS = [
@@ -17,7 +18,7 @@ const TESSDATA_URLS = [
 const app = express();
 
 app.disable('x-powered-by');
-app.use(express.json({ limit: '16kb' }));
+app.use(express.json({ limit: '4mb' }));
 app.get('/health', (_req, res) => {
   res.json({ ok: true, version: APP_VERSION, tessdata: fs.existsSync(TESSDATA_FILE) });
 });
@@ -50,6 +51,21 @@ async function handleTts(req, res) {
 
 app.get('/api/tts', handleTts);
 app.post('/api/tts', handleTts);
+
+app.post('/api/ocr', async (req, res) => {
+  try {
+    const image = String(req.body?.image || '');
+    if (!image.startsWith('data:image')) {
+      res.status(400).json({ ok: false, error: 'image required' });
+      return;
+    }
+    const out = await readSubtitle(image);
+    res.json({ ok: true, ...out });
+  } catch (err) {
+    console.error('ocr failed', err);
+    res.status(502).json({ ok: false, error: 'ocr failed' });
+  }
+});
 
 app.use(
   '/vendor/tesseract',
@@ -95,6 +111,9 @@ app.listen(PORT, '0.0.0.0', () => {
   else console.log('공개 주소 없음: Railway 서비스 Settings → Networking → Generate Domain');
   ensureTessdata().catch((err) => {
     console.warn('한글 OCR 데이터 준비 실패', err);
+  });
+  ensureOcr().catch((err) => {
+    console.warn('PaddleOCR 준비 실패, Tesseract로 대체합니다', err);
   });
 });
 
