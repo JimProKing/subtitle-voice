@@ -279,8 +279,9 @@ async function runOcr(frameCanvas) {
 function onTtsChange(info) {
   if (info.current) $('now-text').textContent = info.current;
   const voice = mixVoice(state.settings.gender, state.settings.age);
+  const next = info.waiting ? ` · 다음 ${info.waiting}줄` : '';
   const err = info.error ? ` · ${info.error}` : '';
-  $('now-meta').textContent = `${voice.label}${err}`;
+  $('now-meta').textContent = `${voice.label}${next}${err}`;
   if (!info.current && !info.waiting && state.running) {
     a11y.setStatus('찾는 중');
   }
@@ -322,11 +323,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=16', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=17', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v16')) return;
-      sessionStorage.setItem('sw-reloaded-v16', '1');
+      if (sessionStorage.getItem('sw-reloaded-v17')) return;
+      sessionStorage.setItem('sw-reloaded-v17', '1');
       location.reload();
     });
   } catch {

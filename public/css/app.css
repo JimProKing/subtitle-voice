@@ -249,29 +249,17 @@ button:focus-visible {
 }
 
 .now {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  z-index: 2;
   width: 100%;
-  padding: 10px 14px 16px;
-  background: linear-gradient(rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0));
-  pointer-events: none;
-}
-
-.now-label {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.75rem;
-  font-weight: 700;
+  padding: 6px 14px 4px;
+  flex: 0 0 auto;
+  background: #000;
 }
 
 #now-text {
-  margin: 2px 0 0;
-  font-size: 1.05rem;
-  font-weight: 900;
-  letter-spacing: -0.04em;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -281,7 +269,7 @@ button:focus-visible {
 #now-meta {
   margin: 2px 0 0;
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 .dock {
