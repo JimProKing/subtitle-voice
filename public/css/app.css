@@ -76,30 +76,30 @@ body {
 }
 
 .topbar {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px 8px;
+}
+
+.topbar-row {
+  display: flex;
   align-items: center;
-  padding: 8px 12px;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .topbar h1 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
 }
 
 .status {
   margin: 0;
-  text-align: center;
   font-weight: 800;
   color: var(--accent);
-  font-size: 0.95rem;
-}
-
-.top-actions {
-  display: flex;
-  justify-content: flex-end;
+  font-size: 1rem;
 }
 
 button,
@@ -113,8 +113,10 @@ button {
   border: 0;
   border-radius: 16px;
   padding: 12px 16px;
-  background: #222;
+  background: #1c1c1e;
   cursor: pointer;
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 button:focus-visible {
@@ -122,18 +124,19 @@ button:focus-visible {
   outline-offset: 3px;
 }
 
-.icon-btn,
-.ghost-sq {
-  min-width: var(--tap);
-  background: #1c1c1e;
-  font-weight: 800;
+.full {
+  width: 100%;
 }
 
 .primary {
   width: 100%;
   background: var(--accent);
   color: var(--accent-ink);
-  font-weight: 800;
+}
+
+.danger {
+  background: var(--danger);
+  color: #fff;
 }
 
 .ghost {
@@ -143,10 +146,11 @@ button:focus-visible {
 }
 
 .help-btn {
-  min-width: 44px;
-  min-height: 44px;
-  width: 44px;
-  height: 44px;
+  flex: 0 0 48px;
+  min-width: 48px;
+  min-height: 48px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   border-radius: 50%;
   border: 3px solid var(--help);
@@ -157,17 +161,29 @@ button:focus-visible {
   line-height: 1;
 }
 
-.with-help {
-  position: relative;
-  display: inline-flex;
-  align-items: flex-start;
+.action-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 
-.with-help > .help-btn {
-  position: absolute;
-  top: -10px;
-  right: -12px;
-  z-index: 2;
+.action-row.compact {
+  width: auto;
+  max-width: 46%;
+}
+
+.action-row.compact .full {
+  min-width: 96px;
+}
+
+.stack-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(520px, 92vw);
+  margin: 0 auto;
+  padding: 8px 0 20px;
 }
 
 .home {
@@ -176,8 +192,8 @@ button:focus-visible {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 28px;
-  padding: 24px 16px 40px;
+  gap: 20px;
+  padding: 24px 16px 32px;
   text-align: center;
 }
 
@@ -195,47 +211,6 @@ button:focus-visible {
   font-size: 0.9rem;
 }
 
-.shutter-row,
-.dock {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 12px;
-  width: min(520px, 100%);
-  padding: 8px 16px 20px;
-}
-
-.dock {
-  margin: 0 auto;
-}
-
-.shutter-wrap {
-  justify-self: center;
-}
-
-.shutter {
-  width: 108px;
-  height: 108px;
-  min-height: 108px;
-  border-radius: 50%;
-  border: 8px solid #fff;
-  background: #fff;
-  color: #111;
-  font-weight: 900;
-  font-size: 1.15rem;
-}
-
-.shutter-stop {
-  background: var(--danger);
-  border-color: #fff;
-  color: #fff;
-}
-
-.help-btn-on-shutter {
-  right: -6px;
-  top: -6px;
-}
-
 .error {
   color: var(--danger);
   font-weight: 800;
@@ -246,13 +221,27 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  align-items: center;
+}
+
+.zone-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 77vw;
+  margin: 4px auto 8px;
+  font-weight: 800;
+  font-size: 0.95rem;
+  text-align: center;
 }
 
 .viewfinder {
   position: relative;
-  flex: 1;
-  min-height: 220px;
-  margin: 4px 18px 8px;
+  width: min(77vw, calc(56dvh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  flex: 0 0 auto;
+  margin: 0 auto 8px;
   border-radius: 18px;
   overflow: hidden;
   background: #000;
@@ -264,7 +253,7 @@ button:focus-visible {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  object-fit: cover;
 }
 
 #overlay {
@@ -275,41 +264,22 @@ button:focus-visible {
   position: absolute;
   left: 8%;
   right: 8%;
-  bottom: 6%;
-  height: 24%;
+  bottom: 8%;
+  height: 26%;
   border: 5px solid var(--accent);
   border-radius: 12px;
   pointer-events: none;
-  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.42);
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-.sub-frame span {
-  margin-top: 6px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  font-weight: 900;
-  font-size: 0.85rem;
-  padding: 4px 10px;
-  border-radius: 8px;
-}
-
-.zone-help {
-  position: absolute;
-  right: 10px;
-  bottom: calc(6% + 24% - 12px);
-  z-index: 3;
+  box-shadow: 0 0 0 999px rgba(0, 0, 0, 0.35);
 }
 
 body.region-top .sub-frame {
-  top: 5%;
+  top: 8%;
   bottom: auto;
 }
 
 .now {
-  padding: 8px 18px 4px;
+  width: 77vw;
+  padding: 6px 0 4px;
 }
 
 .now-label {
@@ -321,16 +291,24 @@ body.region-top .sub-frame {
 
 #now-text {
   margin: 4px 0 0;
-  font-size: 1.45rem;
+  font-size: 1.2rem;
   font-weight: 900;
   letter-spacing: -0.04em;
-  min-height: 2.2em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 #now-meta {
   margin: 4px 0 0;
   color: var(--muted);
   font-size: 0.85rem;
+}
+
+.dock {
+  width: 77vw;
+  padding-bottom: 16px;
 }
 
 .sheet {
@@ -341,6 +319,7 @@ body.region-top .sub-frame {
   background: #111;
   color: var(--text);
   padding: 0;
+  overflow: auto;
 }
 
 .sheet::backdrop {
@@ -348,9 +327,15 @@ body.region-top .sub-frame {
 }
 
 .sheet-inner {
-  padding: 20px 16px 24px;
+  padding: 16px 16px 24px;
   display: grid;
   gap: 16px;
+}
+
+.sheet-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .sheet h2 {
@@ -373,16 +358,17 @@ legend {
   gap: 8px;
 }
 
-.seg {
+.seg,
+.speed-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
 }
 
-.seg button {
-  flex: 1 1 30%;
-  min-height: 56px;
-  font-weight: 800;
+.seg button,
+.speed-row button {
+  width: 100%;
+  white-space: nowrap;
 }
 
 .seg button[aria-pressed="true"] {
@@ -390,16 +376,10 @@ legend {
   color: var(--accent-ink);
 }
 
-.speed-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
 .speed-row b {
-  flex: 1;
   text-align: center;
   font-size: 1.3rem;
+  padding: 8px 0;
 }
 
 .help-text {
@@ -408,6 +388,7 @@ legend {
   font-weight: 800;
   font-size: 1.15rem;
   line-height: 1.45;
+  white-space: normal;
 }
 
 body.is-live .home {
@@ -418,21 +399,16 @@ body.is-live .stage {
   display: flex;
 }
 
-@media (orientation: landscape) and (max-height: 520px) {
-  .home-title {
-    font-size: 1.6rem;
-  }
-
-  .shutter,
-  .shutter-stop {
-    width: 84px;
-    height: 84px;
-    min-height: 84px;
+@media (orientation: landscape) {
+  .zone-hint,
+  .now,
+  .dock {
+    width: min(77vw, calc(56dvh * 16 / 9));
   }
 
   #now-text {
-    font-size: 1.15rem;
-    min-height: 1.4em;
+    font-size: 1.05rem;
+    -webkit-line-clamp: 2;
   }
 }
 

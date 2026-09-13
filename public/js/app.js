@@ -106,11 +106,11 @@ function applyScale() {
 
 function applyRegionClass() {
   document.body.classList.toggle('region-top', state.settings.regionMode === 'top');
-  const label = $('sub-frame')?.querySelector('span');
-  if (label) {
-    label.textContent = state.settings.regionMode === 'top'
-      ? '위 자막을 이 칸에 맞추세요'
-      : '자막을 이 칸에 맞추세요';
+  const hint = $('zone-hint-text');
+  if (hint) {
+    hint.textContent = state.settings.regionMode === 'top'
+      ? '위 자막을 노란 칸에 맞추세요'
+      : '자막을 노란 칸에 맞추세요';
   }
 }
 
@@ -332,8 +332,19 @@ async function onVisibility() {
   if (document.visibilityState === 'visible' && state.running) await keepAwake();
 }
 
-function registerSw() {
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+async function registerSw() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    const reg = await navigator.serviceWorker.register('/sw.js?v=4', { updateViaCache: 'none' });
+    await reg.update();
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (sessionStorage.getItem('sw-reloaded-v4')) return;
+      sessionStorage.setItem('sw-reloaded-v4', '1');
+      location.reload();
+    });
+  } catch {
+    /* ignore */
+  }
 }
 
 boot();

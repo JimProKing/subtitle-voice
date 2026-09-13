@@ -12,7 +12,7 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/icon-512.jpg" />
-    <link rel="stylesheet" href="/css/app.css?v=3" />
+    <link rel="stylesheet" href="/css/app.css?v=4" />
   </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -21,66 +21,67 @@
 
     <div class="shell">
       <header class="topbar">
-        <h1>자막소리</h1>
-        <p id="status" class="status">대기</p>
-        <div class="top-actions">
-          <span class="with-help">
-            <button type="button" class="icon-btn" id="btn-settings" aria-label="설정">설정</button>
+        <div class="topbar-row">
+          <h1>자막소리</h1>
+          <div class="action-row compact">
+            <button type="button" class="full" id="btn-settings" aria-label="설정">설정</button>
             <button type="button" class="help-btn" data-help="settings" aria-label="설정 설명">?</button>
-          </span>
+          </div>
         </div>
+        <p id="status" class="status">대기</p>
       </header>
 
       <main id="main">
         <section id="home" class="home">
           <p class="home-title">극장 자막을<br />소리로</p>
           <p id="engine-state" class="engine">준비 중</p>
-          <p class="engine" id="app-version">v3</p>
-          <div class="shutter-row">
-            <span class="with-help">
-              <button type="button" class="ghost-sq" id="btn-start-file" aria-label="테스트 영상">영상</button>
+          <p class="engine" id="app-version">v4</p>
+          <div class="stack-actions">
+            <div class="action-row">
+              <button type="button" class="full primary" id="btn-start-camera" aria-label="시작">시작</button>
+              <button type="button" class="help-btn" data-help="start" aria-label="시작 설명">?</button>
+            </div>
+            <div class="action-row">
+              <button type="button" class="full" id="btn-start-file" aria-label="테스트 영상">테스트 영상</button>
               <button type="button" class="help-btn" data-help="file" aria-label="테스트 영상 설명">?</button>
-            </span>
-            <span class="with-help shutter-wrap">
-              <button type="button" class="shutter" id="btn-start-camera" aria-label="시작">시작</button>
-              <button type="button" class="help-btn help-btn-on-shutter" data-help="start" aria-label="시작 설명">?</button>
-            </span>
-            <span class="with-help">
-              <button type="button" class="ghost-sq" id="btn-home-voice" aria-label="목소리">목소리</button>
+            </div>
+            <div class="action-row">
+              <button type="button" class="full" id="btn-home-voice" aria-label="목소리">목소리</button>
               <button type="button" class="help-btn" data-help="voice" aria-label="목소리 설명">?</button>
-            </span>
+            </div>
           </div>
           <input id="file-input" type="file" accept="video/*" hidden />
           <p id="camera-error" class="error" hidden></p>
         </section>
 
         <section id="stage" class="stage" hidden>
+          <p class="zone-hint" id="zone-hint">
+            <span id="zone-hint-text">자막을 노란 칸에 맞추세요</span>
+            <button type="button" class="help-btn" data-help="zone" aria-label="자막 칸 설명">?</button>
+          </p>
           <div id="preview-wrap" class="viewfinder">
             <video id="camera" autoplay muted playsinline></video>
             <canvas id="overlay" aria-hidden="true"></canvas>
-            <div class="sub-frame" id="sub-frame">
-              <span>자막을 이 칸에 맞추세요</span>
-            </div>
-            <button type="button" class="help-btn zone-help" data-help="zone" aria-label="자막 칸 설명">?</button>
+            <div class="sub-frame" id="sub-frame"></div>
           </div>
           <div class="now" aria-hidden="true">
             <p class="now-label">지금 읽는 말</p>
             <p id="now-text">자막을 찾고 있습니다</p>
             <p id="now-meta"></p>
           </div>
-          <div class="dock">
-            <span class="with-help">
-              <button type="button" class="ghost-sq" id="btn-voice" aria-label="목소리">목소리</button>
+          <div class="stack-actions dock">
+            <div class="action-row">
+              <button type="button" class="full danger" id="btn-stop" aria-label="정지">정지</button>
+              <button type="button" class="help-btn" data-help="stop" aria-label="정지 설명">?</button>
+            </div>
+            <div class="action-row">
+              <button type="button" class="full" id="btn-voice" aria-label="목소리">목소리</button>
               <button type="button" class="help-btn" data-help="voice" aria-label="목소리 설명">?</button>
-            </span>
-            <span class="with-help shutter-wrap">
-              <button type="button" class="shutter shutter-stop" id="btn-stop" aria-label="정지">정지</button>
-              <button type="button" class="help-btn help-btn-on-shutter" data-help="stop" aria-label="정지 설명">?</button>
-            </span>
-            <span class="with-help">
-              <button type="button" class="ghost-sq" id="btn-speed" aria-label="속도">속도</button>
+            </div>
+            <div class="action-row">
+              <button type="button" class="full" id="btn-speed" aria-label="속도">속도</button>
               <button type="button" class="help-btn" data-help="speed" aria-label="속도 설명">?</button>
-            </span>
+            </div>
           </div>
         </section>
       </main>
@@ -88,7 +89,10 @@
 
     <dialog id="settings-dialog" class="sheet">
       <form method="dialog" class="sheet-inner">
-        <h2>설정</h2>
+        <div class="sheet-head">
+          <h2>설정</h2>
+          <button type="submit" class="full" value="close" aria-label="설정 닫기">닫기</button>
+        </div>
 
         <fieldset>
           <legend>
@@ -170,12 +174,15 @@
 
     <dialog id="help-dialog" class="sheet help-sheet">
       <form method="dialog" class="sheet-inner">
-        <h2>사용법</h2>
+        <div class="sheet-head">
+          <h2>사용법</h2>
+          <button type="submit" class="full" value="close" aria-label="설명 닫기">닫기</button>
+        </div>
         <p id="help-body" class="help-text"></p>
         <button type="submit" class="primary" value="close">닫기</button>
       </form>
     </dialog>
 
-    <script type="module" src="/js/app.js?v=3"></script>
+    <script type="module" src="/js/app.js?v=4"></script>
   </body>
 </html>

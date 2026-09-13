@@ -35,12 +35,14 @@ for (const u of urls) {
 
 const html = await (await fetch('http://localhost:3000/')).text();
 const needles = [
-  '자막을 이 칸에 맞추세요',
+  '자막을 노란 칸에 맞추세요',
   'btn-start-camera',
   'lang="ko"',
   '/js/app.js',
   'data-help',
   '괴물',
+  'sheet-head',
+  '테스트 영상',
 ];
 for (const needle of needles) {
   if (!html.includes(needle)) {
