@@ -4,6 +4,6 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY . .
 ENV NODE_ENV=production
-ENV APP_VERSION=8
+ENV APP_VERSION=9
 EXPOSE 3000
 CMD ["node", "server.js"]

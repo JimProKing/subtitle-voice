@@ -12,7 +12,7 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/icon-512.jpg" />
-    <link rel="stylesheet" href="/css/app.css?v=8" />
+    <link rel="stylesheet" href="/css/app.css?v=9" />
   </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -35,7 +35,7 @@
         <section id="home" class="home">
           <p class="home-title">시각장애인 용<br />자막 TTS 웹앱</p>
           <p id="engine-state" class="engine">준비 중</p>
-          <p class="engine" id="app-version">v8</p>
+          <p class="engine" id="app-version">v9</p>
           <div class="stack-actions">
             <div class="action-row">
               <button type="button" class="full primary" id="btn-start-camera" aria-label="시작">시작</button>
@@ -56,7 +56,7 @@
 
         <section id="stage" class="stage" hidden>
           <p class="zone-hint" id="zone-hint">
-            <span id="zone-hint-text">자막을 노란 칸에 맞추세요</span>
+            <span id="zone-hint-text">노란 칸에 자막을 맞추세요</span>
             <button type="button" class="help-btn" data-help="zone" aria-label="자막 칸 설명">?</button>
           </p>
           <div id="preview-wrap" class="viewfinder">
@@ -69,14 +69,14 @@
             <p id="now-text">자막을 찾고 있습니다</p>
             <p id="now-meta"></p>
           </div>
-          <div class="stack-actions dock">
-            <div class="action-row">
-              <button type="button" class="full danger" id="btn-stop" aria-label="정지">정지</button>
-              <button type="button" class="help-btn" data-help="stop" aria-label="정지 설명">?</button>
-            </div>
+          <div class="dock">
             <div class="action-row">
               <button type="button" class="full" id="btn-voice" aria-label="목소리">목소리</button>
               <button type="button" class="help-btn" data-help="voice" aria-label="목소리 설명">?</button>
+            </div>
+            <div class="action-row shutter-slot">
+              <button type="button" class="shutter-stop" id="btn-stop" aria-label="정지">정지</button>
+              <button type="button" class="help-btn" data-help="stop" aria-label="정지 설명">?</button>
             </div>
             <div class="action-row">
               <button type="button" class="full" id="btn-speed" aria-label="속도">속도</button>
@@ -169,6 +169,6 @@
       </form>
     </dialog>
 
-    <script type="module" src="/js/app.js?v=8"></script>
+    <script type="module" src="/js/app.js?v=9"></script>
   </body>
 </html>

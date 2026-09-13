@@ -323,11 +323,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=8', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=9', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v8')) return;
-      sessionStorage.setItem('sw-reloaded-v8', '1');
+      if (sessionStorage.getItem('sw-reloaded-v9')) return;
+      sessionStorage.setItem('sw-reloaded-v9', '1');
       location.reload();
     });
   } catch {
