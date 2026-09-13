@@ -6,7 +6,7 @@ import { synthesize } from './tts-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
-const APP_VERSION = process.env.APP_VERSION || '9';
+const APP_VERSION = process.env.APP_VERSION || '10';
 const TESSDATA_DIR = path.join(__dirname, 'public', 'tessdata');
 const TESSDATA_FILE = path.join(TESSDATA_DIR, 'kor.traineddata.gz');
 const TESSDATA_URLS = [
@@ -17,6 +17,7 @@ const TESSDATA_URLS = [
 const app = express();
 
 app.disable('x-powered-by');
+app.use(express.json({ limit: '16kb' }));
 app.get('/health', (_req, res) => {
   res.json({ ok: true, version: APP_VERSION, tessdata: fs.existsSync(TESSDATA_FILE) });
 });
@@ -24,18 +25,19 @@ app.get('/version', (_req, res) => {
   res.json({ ok: true, version: APP_VERSION });
 });
 
-app.get('/api/tts', async (req, res) => {
+async function handleTts(req, res) {
   try {
-    const text = String(req.query.text || '').trim();
+    const src = req.method === 'POST' ? req.body || {} : req.query || {};
+    const text = String(src.text || '').trim();
     if (!text) {
       res.status(400).type('text/plain').send('text required');
       return;
     }
     const buf = await synthesize({
       text,
-      gender: String(req.query.gender || 'male'),
-      age: String(req.query.age || 'young'),
-      speed: Number(req.query.speed || 1.15),
+      gender: String(src.gender || 'male'),
+      age: String(src.age || 'young'),
+      speed: Number(src.speed || src.rate || 1.15),
     });
     res.setHeader('Content-Type', 'audio/mpeg');
     res.setHeader('Cache-Control', 'no-store');
@@ -44,7 +46,10 @@ app.get('/api/tts', async (req, res) => {
     console.error('tts failed', err);
     res.status(502).type('text/plain').send('tts failed');
   }
-});
+}
+
+app.get('/api/tts', handleTts);
+app.post('/api/tts', handleTts);
 
 app.use(
   '/vendor/tesseract',

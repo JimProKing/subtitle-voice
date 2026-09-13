@@ -281,7 +281,8 @@ function onTtsChange(info) {
   if (info.current) $('now-text').textContent = info.current;
   const voice = mixVoice(state.settings.gender, state.settings.age);
   const wait = info.waiting ? ` · 대기 ${info.waiting}문장` : '';
-  $('now-meta').textContent = `${voice.label}${wait}`;
+  const err = info.error ? ` · ${info.error}` : '';
+  $('now-meta').textContent = `${voice.label}${wait}${err}`;
   if (!info.current && !info.waiting && state.running) {
     a11y.setStatus('찾는 중');
   }
@@ -323,11 +324,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=9', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=10', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v9')) return;
-      sessionStorage.setItem('sw-reloaded-v9', '1');
+      if (sessionStorage.getItem('sw-reloaded-v10')) return;
+      sessionStorage.setItem('sw-reloaded-v10', '1');
       location.reload();
     });
   } catch {

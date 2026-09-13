@@ -4,17 +4,37 @@ let speaking = false;
 let current = null;
 let speakToken = 0;
 let player = null;
+let lastError = '';
 const pending = [];
 let onChange = () => {};
+
+const SILENCE =
+  'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA';
 
 export function setOnChange(fn) {
   onChange = fn || (() => {});
 }
 
-export function loadVoices() {}
+export function loadVoices() {
+  if (window.speechSynthesis) window.speechSynthesis.getVoices();
+}
 
 export function unlock() {
-  /* audio element plays after user gesture */
+  ensurePlayer();
+  player.muted = false;
+  player.volume = 1;
+  player.src = SILENCE;
+  const kick = player.play();
+  if (kick && kick.catch) kick.catch(() => {});
+  try {
+    const warm = new SpeechSynthesisUtterance(' ');
+    warm.volume = 0;
+    warm.lang = 'ko-KR';
+    window.speechSynthesis.speak(warm);
+    window.speechSynthesis.cancel();
+  } catch {
+    /* ignore */
+  }
 }
 
 export function status() {
@@ -23,6 +43,7 @@ export function status() {
     current: current ? current.text : '',
     pending: pending.map((p) => p.text),
     waiting: pending.length,
+    error: lastError,
   };
 }
 
@@ -36,7 +57,13 @@ export function enqueue(text, { gender, age, rate }) {
   if (current && same(current.text, clean)) return false;
   if (pending.some((p) => same(p.text, clean))) return false;
   const voice = mixVoice(gender, age);
-  pending.push({ text: clean, voice, rate, gender, age });
+  pending.push({
+    text: clean,
+    voice,
+    rate: Number(rate) || 1.15,
+    gender,
+    age,
+  });
   while (pending.length > 2) pending.shift();
   notify();
   pump();
@@ -52,7 +79,13 @@ export function speakSample({ gender, age, rate }) {
         ? '안녕하세요. 여성 목소리로 읽습니다.'
         : '안녕하세요. 이 목소리로 읽습니다.';
   clear();
-  speakNow({ text: `${voice.label}. ${line}`, voice, rate, gender, age });
+  speakNow({
+    text: `${voice.label}. ${line}`,
+    voice,
+    rate: Number(rate) || 1.15,
+    gender,
+    age,
+  });
   return describeChoice(voice);
 }
 
@@ -66,6 +99,11 @@ export function clear() {
   speaking = false;
   speakToken += 1;
   stopPlayer();
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    /* ignore */
+  }
   notify();
 }
 
@@ -83,44 +121,105 @@ async function speakNow(item) {
   const my = ++speakToken;
   current = item;
   speaking = true;
+  lastError = '';
   notify();
+  const gender = item.gender || item.voice.gender;
+  const age = item.age || item.voice.age;
+  const rate = Number(item.rate) || 1.15;
+
   try {
-    const url = `/api/tts?text=${encodeURIComponent(item.text)}&gender=${encodeURIComponent(item.gender || item.voice.gender)}&age=${encodeURIComponent(item.age || item.voice.age)}&speed=${encodeURIComponent(item.rate)}`;
-    const res = await fetch(url);
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 12000);
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: item.text, gender, age, speed: rate }),
+      signal: ctrl.signal,
+    });
+    window.clearTimeout(timer);
     if (!res.ok) throw new Error(`tts ${res.status}`);
     const blob = await res.blob();
     if (my !== speakToken) return;
-    const src = URL.createObjectURL(blob);
-    stopPlayer();
-    player = new Audio(src);
-    player.onended = () => {
-      URL.revokeObjectURL(src);
-      if (my !== speakToken) return;
-      finish();
-    };
-    player.onerror = () => {
-      URL.revokeObjectURL(src);
-      if (my !== speakToken) return;
-      finish();
-    };
-    await player.play();
+    if (!blob || blob.size < 200) throw new Error('empty-audio');
+    await playBlob(blob, my);
   } catch (err) {
     console.error(err);
     if (my !== speakToken) return;
+    lastError = '서버 목소리 실패, 기기 목소리로 읽습니다';
+    notify();
+    speakDevice(item, my, rate);
+  }
+}
+
+function playBlob(blob, my) {
+  return new Promise((resolve, reject) => {
+    ensurePlayer();
+    const src = URL.createObjectURL(blob);
+    let settled = false;
+    const done = (err) => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(src);
+      player.onended = null;
+      player.onerror = null;
+      if (err) reject(err);
+      else resolve();
+    };
+    player.onended = () => {
+      if (my === speakToken) finish();
+      done();
+    };
+    player.onerror = () => done(new Error('play-error'));
+    player.muted = false;
+    player.volume = 1;
+    player.src = src;
+    const p = player.play();
+    if (p && p.catch) p.catch((e) => done(e));
+  });
+}
+
+function speakDevice(item, my, rate) {
+  try {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(item.text);
+    u.lang = 'ko-KR';
+    u.rate = Math.max(0.7, Math.min(1.6, rate));
+    u.pitch = item.gender === 'male' ? 0.7 : item.gender === 'female' ? 1.2 : 1;
+    u.onend = () => {
+      if (my !== speakToken) return;
+      finish();
+    };
+    u.onerror = () => {
+      if (my !== speakToken) return;
+      lastError = '소리를 재생하지 못했습니다';
+      finish();
+    };
+    window.speechSynthesis.speak(u);
+  } catch (err) {
+    console.error(err);
+    lastError = '소리를 재생하지 못했습니다';
     finish();
   }
+}
+
+function ensurePlayer() {
+  if (player) return;
+  player = new Audio();
+  player.preload = 'auto';
+  player.playsInline = true;
+  player.setAttribute('playsinline', '');
+  player.setAttribute('webkit-playsinline', '');
 }
 
 function stopPlayer() {
   if (!player) return;
   try {
     player.pause();
-    player.removeAttribute('src');
-    player.load();
+    player.onended = null;
+    player.onerror = null;
   } catch {
     /* ignore */
   }
-  player = null;
 }
 
 function finish() {
