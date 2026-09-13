@@ -6,7 +6,6 @@ let current = null;
 let speakToken = 0;
 let player = null;
 let lastError = '';
-const pending = [];
 let onChange = () => {};
 
 const SILENCE =
@@ -42,8 +41,8 @@ export function status() {
   return {
     speaking,
     current: current ? current.text : '',
-    pending: pending.map((p) => p.text),
-    waiting: pending.length,
+    pending: [],
+    waiting: 0,
     error: lastError,
   };
 }
@@ -55,39 +54,16 @@ export function isSpeaking() {
 export function enqueue(text, { gender, age, rate }) {
   const clean = String(text || '').trim();
   if (!clean) return false;
-  if (current) {
-    const rel = related(clean, current.text);
-    if (rel !== 'new') return false;
-  }
-  for (let i = 0; i < pending.length; i++) {
-    const rel = related(clean, pending[i].text);
-    if (rel === 'new') continue;
-    if (normLen(clean) > normLen(pending[i].text)) {
-      pending[i].text = clean;
-      pending[i].blob = null;
-      pending[i].ready = fetchAudio(pending[i]);
-      notify();
-    }
-    return false;
-  }
+  if (current && related(clean, current.text) !== 'new') return false;
   const voice = mixVoice(gender, age);
-  const item = {
+  speakNow({
     text: clean,
     voice,
     rate: Number(rate) || 1.15,
     gender,
     age,
-    blob: null,
-  };
-  item.ready = fetchAudio(item);
-  pending.push(item);
-  notify();
-  pump();
+  });
   return true;
-}
-
-function normLen(text) {
-  return String(text).replace(/\s+/g, '').length;
 }
 
 export function speakSample({ gender, age, rate }) {
@@ -99,17 +75,13 @@ export function speakSample({ gender, age, rate }) {
         ? '안녕하세요. 여성 목소리로 읽습니다.'
         : '안녕하세요. 이 목소리로 읽습니다.';
   clear();
-  const item = {
+  speakNow({
     text: `${voice.label}. ${line}`,
     voice,
     rate: Number(rate) || 1.15,
     gender,
     age,
-    blob: null,
-  };
-  item.ready = fetchAudio(item);
-  pending.push(item);
-  pump();
+  });
   return describeChoice(voice);
 }
 
@@ -118,7 +90,6 @@ export function describeChoice(preset) {
 }
 
 export function clear() {
-  pending.length = 0;
   current = null;
   speaking = false;
   speakToken += 1;
@@ -131,49 +102,37 @@ export function clear() {
   notify();
 }
 
-function pump() {
-  if (speaking || current) return;
-  const item = pending.shift();
-  if (!item) {
-    notify();
-    return;
-  }
-  speakNow(item);
-}
-
-async function fetchAudio(item) {
-  const gender = item.gender || item.voice.gender;
-  const age = item.age || item.voice.age;
-  const rate = Number(item.rate) || 1.15;
-  const ctrl = new AbortController();
-  const timer = window.setTimeout(() => ctrl.abort(), 12000);
-  try {
-    const res = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: item.text, gender, age, speed: rate }),
-      signal: ctrl.signal,
-    });
-    if (!res.ok) throw new Error(`tts ${res.status}`);
-    const blob = await res.blob();
-    if (!blob || blob.size < 200) throw new Error('empty-audio');
-    item.blob = blob;
-    return blob;
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
-
 async function speakNow(item) {
   const my = ++speakToken;
   current = item;
   speaking = true;
   lastError = '';
   notify();
+  stopPlayer();
+  try {
+    window.speechSynthesis.cancel();
+  } catch {
+    /* ignore */
+  }
+
+  const gender = item.gender || item.voice.gender;
+  const age = item.age || item.voice.age;
   const rate = Number(item.rate) || 1.15;
   try {
-    const blob = item.blob || (await item.ready);
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: item.text, gender, age, speed: rate }),
+      signal: ctrl.signal,
+    });
+    window.clearTimeout(timer);
     if (my !== speakToken) return;
+    if (!res.ok) throw new Error(`tts ${res.status}`);
+    const blob = await res.blob();
+    if (my !== speakToken) return;
+    if (!blob || blob.size < 200) throw new Error('empty-audio');
     await playBlob(blob, my);
   } catch (err) {
     console.error(err);
@@ -259,11 +218,6 @@ function finish() {
   speaking = false;
   current = null;
   notify();
-  pump();
-}
-
-function same(a, b) {
-  return String(a).replace(/\s+/g, '') === String(b).replace(/\s+/g, '');
 }
 
 function notify() {

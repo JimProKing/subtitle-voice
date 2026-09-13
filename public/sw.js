@@ -1,4 +1,4 @@
-const CACHE = 'subtitle-voice-v15';
+const CACHE = 'subtitle-voice-v16';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());

@@ -1,5 +1,7 @@
 let busy = false;
 let ready = false;
+let pending = null;
+const hold = document.createElement('canvas');
 
 export function isBusy() {
   return busy;
@@ -14,11 +16,20 @@ export async function init(onProgress) {
   if (onProgress) onProgress('ready', 1);
 }
 
+export function holdFrame(srcCanvas) {
+  copyFrame(srcCanvas);
+}
+
 export async function recognizeFrame(srcCanvas) {
-  if (busy) return null;
+  if (busy) {
+    copyFrame(srcCanvas);
+    return null;
+  }
   busy = true;
   try {
-    const jpeg = frameJpeg(srcCanvas);
+    const frame = pending || srcCanvas;
+    pending = null;
+    const jpeg = frameJpeg(frame);
     const res = await fetch('/api/ocr', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -36,17 +47,23 @@ export async function recognizeFrame(srcCanvas) {
   }
 }
 
+function copyFrame(src) {
+  if (hold.width !== src.width) hold.width = src.width;
+  if (hold.height !== src.height) hold.height = src.height;
+  hold.getContext('2d').drawImage(src, 0, 0);
+  pending = hold;
+}
+
 function frameJpeg(src) {
   const top = Math.round(src.height * 0.34);
   const cropH = Math.max(8, src.height - top);
-  const maxW = 560;
+  const maxW = 480;
   const scale = Math.min(1, maxW / src.width);
   const w = Math.max(2, Math.round(src.width * scale));
   const h = Math.max(2, Math.round(cropH * scale));
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(src, 0, top, src.width, cropH, 0, 0, w, h);
-  return c.toDataURL('image/jpeg', 0.55);
+  c.getContext('2d').drawImage(src, 0, top, src.width, cropH, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.5);
 }

@@ -17,6 +17,7 @@ const state = {
   emptyCount: 0,
   stableSince: 0,
   frameCanvas: document.createElement('canvas'),
+  fpCanvas: document.createElement('canvas'),
   raf: 0,
   lastSample: 0,
   lastOcrAt: 0,
@@ -220,10 +221,31 @@ function loop(now) {
   state.lastSample = now;
 
   if (!camera.drawFrame(state.frameCanvas)) return;
-  if (!ocr.isBusy() && now - state.lastOcrAt >= CONFIG.ocrIntervalMs) {
+  const fp = fingerprintBottom(state.frameCanvas);
+  const changed = !state.lastFp || preprocess.sad(fp, state.lastFp) > 10;
+  if (ocr.isBusy()) {
+    if (changed) ocr.holdFrame(state.frameCanvas);
+    return;
+  }
+  if (changed || now - state.lastOcrAt >= CONFIG.ocrIntervalMs) {
+    state.lastFp = fp;
     state.lastOcrAt = now;
     runOcr(state.frameCanvas);
   }
+}
+
+function fingerprintBottom(src) {
+  const c = state.fpCanvas;
+  c.width = 64;
+  c.height = 16;
+  const y = Math.floor(src.height * 0.4);
+  c.getContext('2d').drawImage(src, 0, y, src.width, src.height - y, 0, 0, 64, 16);
+  const { data } = c.getContext('2d').getImageData(0, 0, 64, 16);
+  const fp = new Uint8Array(64 * 16);
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    fp[p] = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+  }
+  return fp;
 }
 
 async function runOcr(frameCanvas) {
@@ -257,9 +279,8 @@ async function runOcr(frameCanvas) {
 function onTtsChange(info) {
   if (info.current) $('now-text').textContent = info.current;
   const voice = mixVoice(state.settings.gender, state.settings.age);
-  const wait = info.waiting ? ` · 대기 ${info.waiting}문장` : '';
   const err = info.error ? ` · ${info.error}` : '';
-  $('now-meta').textContent = `${voice.label}${wait}${err}`;
+  $('now-meta').textContent = `${voice.label}${err}`;
   if (!info.current && !info.waiting && state.running) {
     a11y.setStatus('찾는 중');
   }
@@ -301,11 +322,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=15', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=16', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v15')) return;
-      sessionStorage.setItem('sw-reloaded-v15', '1');
+      if (sessionStorage.getItem('sw-reloaded-v16')) return;
+      sessionStorage.setItem('sw-reloaded-v16', '1');
       location.reload();
     });
   } catch {

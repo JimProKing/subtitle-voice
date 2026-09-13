@@ -7,7 +7,7 @@ export const CONFIG = {
   minConfidence: 18,
   minTextPixels: 0.0005,
   maxTextPixels: 0.45,
-  ocrIntervalMs: 220,
+  ocrIntervalMs: 350,
   duplicateRatio: 0.84,
   defaultRate: 1.15,
   minRate: 0.8,
