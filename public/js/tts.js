@@ -1,4 +1,5 @@
 import { mixVoice } from './config.js';
+import { related } from './subtitle.js';
 
 let speaking = false;
 let current = null;
@@ -54,8 +55,21 @@ export function isSpeaking() {
 export function enqueue(text, { gender, age, rate }) {
   const clean = String(text || '').trim();
   if (!clean) return false;
-  if (current && same(current.text, clean)) return false;
-  if (pending.some((p) => same(p.text, clean))) return false;
+  if (current) {
+    const rel = related(clean, current.text);
+    if (rel !== 'new') return false;
+  }
+  for (let i = 0; i < pending.length; i++) {
+    const rel = related(clean, pending[i].text);
+    if (rel === 'new') continue;
+    if (normLen(clean) > normLen(pending[i].text)) {
+      pending[i].text = clean;
+      pending[i].blob = null;
+      pending[i].ready = fetchAudio(pending[i]);
+      notify();
+    }
+    return false;
+  }
   const voice = mixVoice(gender, age);
   const item = {
     text: clean,
@@ -70,6 +84,10 @@ export function enqueue(text, { gender, age, rate }) {
   notify();
   pump();
   return true;
+}
+
+function normLen(text) {
+  return String(text).replace(/\s+/g, '').length;
 }
 
 export function speakSample({ gender, age, rate }) {

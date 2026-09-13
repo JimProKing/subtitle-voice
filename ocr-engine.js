@@ -111,7 +111,9 @@ function pickCaption(lines) {
   if (!scored.length) return { text: '', confidence: 0 };
 
   const best = scored.reduce((a, b) => (b.hangul > a.hangul ? b : a));
-  const cluster = scored.filter((l) => Math.abs(l.y - best.y) < 0.18);
+  const cluster = scored
+    .filter((l) => Math.abs(l.y - best.y) < 0.16)
+    .sort((a, b) => a.y - b.y || (a.x || 0) - (b.x || 0));
   const text = cluster.map((l) => l.text).join(' ');
   const conf = Math.round(100 * (cluster.reduce((s, l) => s + l.conf, 0) / cluster.length));
   return { text, confidence: conf };

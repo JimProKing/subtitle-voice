@@ -30,9 +30,11 @@ def read_image(buf):
         box, (text, conf) = item[0], item[1]
         if not text:
             continue
+        xs = [p[0] for p in box]
         ys = [p[1] for p in box]
+        x = (sum(xs) / len(xs)) / max(img.shape[1], 1)
         y = (sum(ys) / len(ys)) / max(h, 1)
-        lines.append({"text": str(text).strip(), "conf": float(conf), "y": float(y)})
+        lines.append({"text": str(text).strip(), "conf": float(conf), "x": float(x), "y": float(y)})
     return lines
 
 

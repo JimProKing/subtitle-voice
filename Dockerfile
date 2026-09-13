@@ -10,6 +10,6 @@ RUN pip3 install --break-system-packages --no-cache-dir -r requirements-ocr.txt 
   && python3 -c "from paddleocr import PaddleOCR; PaddleOCR(lang='korean', use_angle_cls=False, show_log=False, use_gpu=False)"
 COPY . .
 ENV NODE_ENV=production
-ENV APP_VERSION=14
+ENV APP_VERSION=15
 EXPOSE 3000
 CMD ["node", "server.js"]

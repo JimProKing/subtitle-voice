@@ -39,7 +39,27 @@ export function confirmed(text) {
 export function isDuplicate(text) {
   const n = normalizeCompare(text);
   if (!n) return true;
-  return recent.some((r) => similarity(n, r) >= CONFIG.duplicateRatio);
+  return recent.some((r) => {
+    const rel = related(n, r);
+    if (rel === 'same' || rel === 'similar') return true;
+    if (rel === 'overlap' && n.length <= r.length) return true;
+    return false;
+  });
+}
+
+export function related(a, b) {
+  const na = normalizeCompare(a);
+  const nb = normalizeCompare(b);
+  if (!na || !nb) return 'new';
+  if (na === nb) return 'same';
+  if (hangulBag(na) === hangulBag(nb) && hangulBag(na).length >= 4) return 'same';
+  if (na.startsWith(nb) || nb.startsWith(na)) return 'overlap';
+  if (similarity(na, nb) >= CONFIG.duplicateRatio) return 'similar';
+  return 'new';
+}
+
+function hangulBag(text) {
+  return [...text].filter((ch) => /[\uAC00-\uD7A3]/.test(ch)).sort().join('');
 }
 
 export function remember(text) {
