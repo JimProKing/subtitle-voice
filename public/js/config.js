@@ -1,6 +1,6 @@
 export const CONFIG = {
   analysisFps: 10,
-  stableFrames: 3,
+  stableFrames: 2,
   sadStable: 11,
   sadChanged: 22,
   minHangul: 2,
@@ -12,22 +12,55 @@ export const CONFIG = {
   minRate: 0.8,
   maxRate: 1.8,
   rateStep: 0.05,
-  defaultVoiceId: 3,
-  voiceCount: 8,
+  maxQueue: 3,
   unnamedHoldMs: 12000,
   maxOcrWidth: 1000,
-  bottomBand: { top: 0.74, height: 0.24, inset: 0.07 },
-  topBand: { top: 0.03, height: 0.16, inset: 0.07 },
-  storageKey: 'subtitle-voice-v1',
+  maxSubtitleChars: 48,
+  bottomBand: { top: 0.72, height: 0.24, inset: 0.08 },
+  topBand: { top: 0.04, height: 0.16, inset: 0.08 },
+  storageKey: 'subtitle-voice-v2',
 };
 
-export const VOICE_PRESETS = [
-  { id: 1, label: '목소리 1, 낮은 남성', pitch: 0.72, rateMul: 0.98 },
-  { id: 2, label: '목소리 2, 남성', pitch: 0.84, rateMul: 1.0 },
-  { id: 3, label: '목소리 3, 보통', pitch: 0.96, rateMul: 1.0 },
-  { id: 4, label: '목소리 4, 중성', pitch: 1.05, rateMul: 1.0 },
-  { id: 5, label: '목소리 5, 여성', pitch: 1.16, rateMul: 1.0 },
-  { id: 6, label: '목소리 6, 높은 여성', pitch: 1.3, rateMul: 1.02 },
-  { id: 7, label: '목소리 7, 낮은 중성', pitch: 0.78, rateMul: 0.94 },
-  { id: 8, label: '목소리 8, 또렷한 여성', pitch: 1.22, rateMul: 1.04 },
-];
+export const GENDER = {
+  male: { id: 'male', label: '남성', pitch: 0.82 },
+  female: { id: 'female', label: '여성', pitch: 1.2 },
+  neutral: { id: 'neutral', label: '중성', pitch: 1.0 },
+};
+
+export const AGE = {
+  child: { id: 'child', label: '아이', pitch: 1.22, rate: 1.06 },
+  young: { id: 'young', label: '청년', pitch: 1.0, rate: 1.0 },
+  middle: { id: 'middle', label: '중년', pitch: 0.92, rate: 0.97 },
+  elder: { id: 'elder', label: '노년', pitch: 0.84, rate: 0.9 },
+};
+
+export const CREATURE = {
+  human: { id: 'human', label: '사람', pitch: 1.0, rate: 1.0 },
+  monster: { id: 'monster', label: '괴물', pitch: 0.6, rate: 0.84 },
+  animal: { id: 'animal', label: '동물', pitch: 1.3, rate: 1.08 },
+};
+
+export const DEFAULTS = {
+  rate: 1.15,
+  gender: 'neutral',
+  age: 'young',
+  creature: 'human',
+  regionMode: 'bottom',
+  textScale: 1.15,
+  previewOn: true,
+};
+
+export function mixVoice(gender, age, creature) {
+  const g = GENDER[gender] || GENDER.neutral;
+  const a = AGE[age] || AGE.young;
+  const c = CREATURE[creature] || CREATURE.human;
+  return {
+    pitch: clamp(g.pitch * a.pitch * c.pitch, 0.1, 2),
+    rateMul: clamp(a.rate * c.rate, 0.7, 1.35),
+    label: `${g.label} · ${a.label} · ${c.label}`,
+  };
+}
+
+function clamp(n, min, max) {
+  return Math.max(min, Math.min(max, n));
+}

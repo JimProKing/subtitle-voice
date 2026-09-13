@@ -2,6 +2,7 @@ import { CONFIG } from './config.js';
 
 let lastSpokenNorm = '';
 let lastSpokenAt = 0;
+const recent = [];
 
 export function parse(raw, confidence) {
   if (confidence < CONFIG.minConfidence) return null;
@@ -21,18 +22,20 @@ export function parse(raw, confidence) {
 export function isDuplicate(text) {
   const n = normalizeCompare(text);
   if (!n) return true;
-  if (!lastSpokenNorm) return false;
-  return similarity(n, lastSpokenNorm) >= CONFIG.duplicateRatio;
+  return recent.some((r) => similarity(n, r) >= CONFIG.duplicateRatio);
 }
 
 export function remember(text) {
   lastSpokenNorm = normalizeCompare(text);
   lastSpokenAt = Date.now();
+  if (lastSpokenNorm && !recent.includes(lastSpokenNorm)) recent.push(lastSpokenNorm);
+  if (recent.length > 8) recent.shift();
 }
 
 export function markGap() {
   lastSpokenNorm = '';
   lastSpokenAt = 0;
+  recent.length = 0;
 }
 
 export function lastAge() {
@@ -78,7 +81,8 @@ function isKoreanSubtitle(text) {
   const hangul = (text.match(/[\uAC00-\uD7A3]/g) || []).length;
   const letters = (text.match(/[\uAC00-\uD7A3a-zA-Z]/g) || []).length;
   if (hangul < CONFIG.minHangul) return false;
-  if (letters && hangul / letters < 0.5) return false;
+  if (letters && hangul / letters < 0.65) return false;
+  if (hangul > CONFIG.maxSubtitleChars) return false;
   if (/^[~\-_.…·\s]+$/.test(text)) return false;
   return true;
 }

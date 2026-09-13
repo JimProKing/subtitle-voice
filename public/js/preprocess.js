@@ -227,21 +227,35 @@ export function drawGuides(overlay, src, regionMode, activeRegion) {
   if (overlay.height !== h) overlay.height = h;
   const ctx = overlay.getContext('2d');
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.38)';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
   ctx.fillRect(0, 0, w, h);
 
-  const bands = [];
-  if (regionMode === 'auto') bands.push('bottom', 'top');
-  else bands.push(regionMode);
-
+  const bands = regionMode === 'auto' ? ['bottom', 'top'] : [regionMode];
   for (const which of bands) {
     const b = bandRect(w, h, which);
     ctx.clearRect(b.x, b.y, b.w, b.h);
     const primary = which === (activeRegion || 'bottom');
-    ctx.strokeStyle = primary ? '#ffd400' : 'rgba(255, 212, 0, 0.45)';
-    ctx.lineWidth = primary ? 4 : 2;
-    ctx.setLineDash(primary ? [] : [8, 8]);
-    ctx.strokeRect(b.x + 2, b.y + 2, b.w - 4, b.h - 4);
+    ctx.strokeStyle = primary ? '#ffd400' : 'rgba(255, 212, 0, 0.4)';
+    ctx.lineWidth = primary ? 6 : 2;
+    ctx.setLineDash(primary ? [] : [10, 8]);
+    ctx.strokeRect(b.x + 3, b.y + 3, b.w - 6, b.h - 6);
+    if (primary) {
+      const arm = Math.min(36, b.w * 0.08);
+      ctx.setLineDash([]);
+      ctx.lineWidth = 8;
+      drawCorner(ctx, b.x, b.y, arm, 1, 1);
+      drawCorner(ctx, b.x + b.w, b.y, arm, -1, 1);
+      drawCorner(ctx, b.x, b.y + b.h, arm, 1, -1);
+      drawCorner(ctx, b.x + b.w, b.y + b.h, arm, -1, -1);
+    }
   }
   ctx.setLineDash([]);
+}
+
+function drawCorner(ctx, x, y, arm, dx, dy) {
+  ctx.beginPath();
+  ctx.moveTo(x, y + dy * arm);
+  ctx.lineTo(x, y);
+  ctx.lineTo(x + dx * arm, y);
+  ctx.stroke();
 }

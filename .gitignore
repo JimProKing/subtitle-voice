@@ -1,6 +1,9 @@
 node_modules/
 public/tessdata/
 scripts/*.png
+scripts/seeing-ai/
+참고1.png
+참고2.mp4
 kor.traineddata
 kor.traineddata.gz
 .DS_Store

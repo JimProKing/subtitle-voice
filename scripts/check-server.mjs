@@ -10,6 +10,8 @@ const urls = [
   '/js/ocr.js',
   '/js/subtitle.js',
   '/js/tts.js',
+  '/js/help.js',
+  '/js/settings.js',
   '/manifest.json',
   '/sw.js',
   '/icons/icon.svg',
@@ -33,12 +35,12 @@ for (const u of urls) {
 
 const html = await (await fetch('http://localhost:3000/')).text();
 const needles = [
-  '카메라로 시작',
-  '지금 목소리 변경',
+  '자막을 이 칸에 맞추세요',
   'btn-start-camera',
   'lang="ko"',
   '/js/app.js',
-  '테스트 영상으로 시작',
+  'data-help',
+  '괴물',
 ];
 for (const needle of needles) {
   if (!html.includes(needle)) {

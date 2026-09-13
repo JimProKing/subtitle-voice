@@ -1,4 +1,4 @@
-const CACHE = 'subtitle-voice-v1';
+const CACHE = 'subtitle-voice-v2';
 const PRECACHE = [
   '/',
   '/index.html',
@@ -11,6 +11,8 @@ const PRECACHE = [
   '/js/ocr.js',
   '/js/subtitle.js',
   '/js/tts.js',
+  '/js/help.js',
+  '/js/settings.js',
   '/manifest.json',
   '/icons/icon.svg',
   '/icons/icon-512.jpg',
