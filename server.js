@@ -2,10 +2,11 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { synthesize } from './tts-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
-const APP_VERSION = process.env.APP_VERSION || '6';
+const APP_VERSION = process.env.APP_VERSION || '7';
 const TESSDATA_DIR = path.join(__dirname, 'public', 'tessdata');
 const TESSDATA_FILE = path.join(TESSDATA_DIR, 'kor.traineddata.gz');
 const TESSDATA_URLS = [
@@ -21,6 +22,28 @@ app.get('/health', (_req, res) => {
 });
 app.get('/version', (_req, res) => {
   res.json({ ok: true, version: APP_VERSION });
+});
+
+app.get('/api/tts', async (req, res) => {
+  try {
+    const text = String(req.query.text || '').trim();
+    if (!text) {
+      res.status(400).type('text/plain').send('text required');
+      return;
+    }
+    const buf = await synthesize({
+      text,
+      gender: String(req.query.gender || 'male'),
+      age: String(req.query.age || 'young'),
+      speed: Number(req.query.speed || 1.15),
+    });
+    res.setHeader('Content-Type', 'audio/mpeg');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(buf);
+  } catch (err) {
+    console.error('tts failed', err);
+    res.status(502).type('text/plain').send('tts failed');
+  }
 });
 
 app.use(

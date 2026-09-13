@@ -76,10 +76,6 @@ function bind() {
     state.settings.age = v;
     persist();
   });
-  bindSeg('seg-creature', 'creature', (v) => {
-    state.settings.creature = v;
-    persist();
-  });
   bindSeg('seg-region', 'region', (v) => {
     state.settings.regionMode = v;
     applyRegionClass();
@@ -123,10 +119,9 @@ function paintSettings() {
   press('seg-scale', 'scale', String(s.textScale));
   press('seg-gender', 'gender', s.gender);
   press('seg-age', 'age', s.age);
-  press('seg-creature', 'creature', s.creature);
   press('seg-region', 'region', s.regionMode);
   $('speed-value').textContent = Number(s.rate).toFixed(2);
-  const voice = mixVoice(s.gender, s.age, s.creature);
+  const voice = mixVoice(s.gender, s.age);
   $('btn-voice').setAttribute('aria-label', `목소리, 현재 ${voice.label}`);
   $('btn-home-voice').setAttribute('aria-label', `목소리, 현재 ${voice.label}`);
   const engine = $('voice-engine');
@@ -284,7 +279,7 @@ async function runOcr(prepared) {
 
 function onTtsChange(info) {
   if (info.current) $('now-text').textContent = info.current;
-  const voice = mixVoice(state.settings.gender, state.settings.age, state.settings.creature);
+  const voice = mixVoice(state.settings.gender, state.settings.age);
   const wait = info.waiting ? ` · 대기 ${info.waiting}문장` : '';
   $('now-meta').textContent = `${voice.label}${wait}`;
   if (!info.current && !info.waiting && state.running) {
@@ -328,11 +323,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=6', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=7', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v6')) return;
-      sessionStorage.setItem('sw-reloaded-v6', '1');
+      if (sessionStorage.getItem('sw-reloaded-v7')) return;
+      sessionStorage.setItem('sw-reloaded-v7', '1');
       location.reload();
     });
   } catch {
