@@ -32,7 +32,10 @@ async function boot() {
   paintSettings();
   tts.setOnChange(onTtsChange);
   registerSw();
-  window.speechSynthesis?.addEventListener('voiceschanged', () => tts.loadVoices());
+  window.speechSynthesis?.addEventListener('voiceschanged', () => {
+    tts.loadVoices();
+    paintSettings();
+  });
   ocr.init(onOcrProgress).then(() => {
     $('engine-state').textContent = '준비됨';
   }).catch((err) => {
@@ -125,6 +128,8 @@ function paintSettings() {
   const voice = mixVoice(s.gender, s.age, s.creature);
   $('btn-voice').setAttribute('aria-label', `목소리, 현재 ${voice.label}`);
   $('btn-home-voice').setAttribute('aria-label', `목소리, 현재 ${voice.label}`);
+  const engine = $('voice-engine');
+  if (engine) engine.textContent = tts.describeChoice(voice);
 }
 
 function press(id, attr, value) {
@@ -141,7 +146,9 @@ function openSettings() {
 
 function sampleVoice() {
   tts.unlock();
-  tts.speakSample(state.settings);
+  const note = tts.speakSample(state.settings);
+  const engine = $('voice-engine');
+  if (engine) engine.textContent = note;
 }
 
 function changeSpeed(delta) {
@@ -335,11 +342,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=4', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=5', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v4')) return;
-      sessionStorage.setItem('sw-reloaded-v4', '1');
+      if (sessionStorage.getItem('sw-reloaded-v5')) return;
+      sessionStorage.setItem('sw-reloaded-v5', '1');
       location.reload();
     });
   } catch {
