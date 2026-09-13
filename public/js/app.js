@@ -262,7 +262,11 @@ async function runOcr(prepared) {
       return;
     }
     if (subtitle.isDuplicate(parsed.speakText)) {
-      $('now-meta').textContent = `이미 읽음 · ${parsed.speakText.slice(0, 24)}`;
+      $('now-meta').textContent = `이미 읽음`;
+      return;
+    }
+    if (!subtitle.confirmed(parsed.speakText)) {
+      $('now-meta').textContent = `확인 중 · ${parsed.speakText.slice(0, 28)}`;
       return;
     }
 
@@ -324,11 +328,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=10', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=11', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v10')) return;
-      sessionStorage.setItem('sw-reloaded-v10', '1');
+      if (sessionStorage.getItem('sw-reloaded-v11')) return;
+      sessionStorage.setItem('sw-reloaded-v11', '1');
       location.reload();
     });
   } catch {

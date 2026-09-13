@@ -25,7 +25,7 @@ export function bandRect(width, height, which) {
 
 export function prepare(srcCanvas, which) {
   const band = bandRect(srcCanvas.width, srcCanvas.height, which);
-  const scale = Math.min(2.2, Math.max(1, CONFIG.maxOcrWidth / band.w));
+  const scale = Math.min(2.6, Math.max(1.6, CONFIG.maxOcrWidth / band.w));
   const dw = Math.max(8, Math.round(band.w * scale));
   const dh = Math.max(8, Math.round(band.h * scale));
 
@@ -36,9 +36,7 @@ export function prepare(srcCanvas, which) {
   cctx.drawImage(srcCanvas, band.x, band.y, band.w, band.h, 0, 0, dw, dh);
 
   const image = cctx.getImageData(0, 0, dw, dh);
-  const gray = canvas('gray', dw, dh);
-  paintContrastGray(gray.getContext('2d', { willReadFrequently: true }), image);
-  const { bin, textPx } = toBinary(image);
+  const { bin, textPx } = extractCaption(image);
   const closed = morphClose(bin, dw, dh);
   const ratio = textPx / (dw * dh);
   const fingerprint = fingerprintOf(closed, dw, dh);
@@ -50,8 +48,7 @@ export function prepare(srcCanvas, which) {
   paintBlackOnWhite(octx, boxed ? boxed.bin : closed, out.width, out.height);
 
   return {
-    canvas: gray,
-    binary: out,
+    canvas: out,
     fingerprint,
     empty,
     ratio,
@@ -104,6 +101,25 @@ function percentile(hist, total, q) {
     if (acc >= target) return i;
   }
   return 255;
+}
+
+function extractCaption(image) {
+  const { data, width, height } = image;
+  const bin = new Uint8Array(width * height);
+  let textPx = 0;
+  for (let p = 0, i = 0; p < width * height; p++, i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    const lum = (r * 77 + g * 150 + b * 29) >> 8;
+    const yellow = r > 165 && g > 135 && b < Math.min(r, g) * 0.82;
+    const white = lum > 198 && Math.abs(r - g) < 38 && Math.abs(g - b) < 42;
+    if (yellow || white) {
+      bin[p] = 1;
+      textPx++;
+    }
+  }
+  return { bin, textPx };
 }
 
 function toBinary(image) {

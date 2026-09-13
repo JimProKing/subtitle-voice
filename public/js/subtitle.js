@@ -4,20 +4,36 @@ let lastSpokenNorm = '';
 let lastSpokenAt = 0;
 const recent = [];
 
+let pendingLine = '';
+let pendingHits = 0;
+
 export function parse(raw, confidence) {
+  const digits = (String(raw).match(/[0-9]/g) || []).length;
+  if (digits >= 2) return null;
   const cleaned = clean(raw);
   if (!cleaned) return null;
-  if (!isKoreanSubtitle(cleaned)) return null;
-  const hangul = (cleaned.match(/[\uAC00-\uD7A3]/g) || []).length;
-  if (confidence < CONFIG.minConfidence && hangul < 4) return null;
+  const named = cleaned.match(/^([가-힣]{1,10})\s*[:：]\s*(.+)$/);
+  const speakText = hangulLine(named ? named[2] : cleaned);
+  if (!speakText || !isKoreanSubtitle(speakText)) return null;
+  const hangul = (speakText.match(/[\uAC00-\uD7A3]/g) || []).length;
+  if (confidence < CONFIG.minConfidence && hangul < 8) return null;
+  return {
+    speaker: named ? named[1] : null,
+    speakText,
+    display: speakText,
+  };
+}
 
-  const named = cleaned.match(/^([가-힣A-Za-z]{1,10})\s*[:：]\s*(.+)$/);
-  if (named) {
-    const speakText = clean(named[2]);
-    if (!speakText || !isKoreanSubtitle(speakText)) return null;
-    return { speaker: named[1], speakText, display: cleaned };
+export function confirmed(text) {
+  const n = normalizeCompare(text);
+  if (!n) return false;
+  if (pendingLine && similarity(n, pendingLine) >= 0.78) {
+    pendingHits += 1;
+    return pendingHits >= 2;
   }
-  return { speaker: null, speakText: cleaned, display: cleaned };
+  pendingLine = n;
+  pendingHits = 1;
+  return false;
 }
 
 export function isDuplicate(text) {
@@ -37,6 +53,8 @@ export function markGap() {
   lastSpokenNorm = '';
   lastSpokenAt = 0;
   recent.length = 0;
+  pendingLine = '';
+  pendingHits = 0;
 }
 
 export function lastAge() {
@@ -51,7 +69,7 @@ export function clean(raw) {
     .replace(/\[[^\]]{0,16}\]/g, ' ')
     .replace(/\{[^}]{0,16}\}/g, ' ')
     .replace(/[\u1100-\u11FF\u3130-\u318F]/g, ' ')
-    .replace(/[^\uAC00-\uD7A3a-zA-Z0-9?!,.\s:'"…·~\-：]/g, ' ')
+    .replace(/[^\uAC00-\uD7A3a-zA-Z?!,.\s:'"…·\-：]/g, ' ')
     .replace(/[|｜]/g, ' ')
     .replace(/\s*\n+\s*/g, ' ')
     .replace(/\s+/g, ' ')
@@ -78,13 +96,29 @@ function mergeSplitHangul(text) {
   return out.join(' ');
 }
 
+function hangulLine(text) {
+  return text
+    .split(' ')
+    .filter((tok) => {
+      const h = (tok.match(/[\uAC00-\uD7A3]/g) || []).length;
+      const rest = tok.replace(/[\uAC00-\uD7A3?!,.]/g, '');
+      return h >= 1 && rest.length === 0;
+    })
+    .join(' ')
+    .trim();
+}
+
 function isKoreanSubtitle(text) {
   const hangul = (text.match(/[\uAC00-\uD7A3]/g) || []).length;
-  const letters = (text.match(/[\uAC00-\uD7A3a-zA-Z]/g) || []).length;
+  const latin = (text.match(/[a-zA-Z]/g) || []).length;
+  const digits = (text.match(/[0-9]/g) || []).length;
+  const junk = (text.match(/["'`~^|\\]/g) || []).length;
   if (hangul < CONFIG.minHangul) return false;
-  if (letters && hangul / letters < 0.65) return false;
+  if (latin > 2) return false;
+  if (digits > 0) return false;
+  if (junk >= 1) return false;
   if (hangul > CONFIG.maxSubtitleChars) return false;
-  if (/^[~\-_.…·\s]+$/.test(text)) return false;
+  if (!/[\uAC00-\uD7A3]{3,}/.test(text.replace(/\s/g, ''))) return false;
   return true;
 }
 
