@@ -7,7 +7,7 @@ import { ensureOcr, readSubtitle } from './ocr-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
-const APP_VERSION = process.env.APP_VERSION || '17';
+const APP_VERSION = process.env.APP_VERSION || '18';
 const TESSDATA_DIR = path.join(__dirname, 'public', 'tessdata');
 const TESSDATA_FILE = path.join(TESSDATA_DIR, 'kor.traineddata.gz');
 const TESSDATA_URLS = [

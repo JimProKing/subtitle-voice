@@ -156,7 +156,6 @@ function onOcrProgress(_status, progress) {
 
 async function start(source, file) {
   try {
-    tts.unlock();
     a11y.setStatus('시작');
     if (!ocr.isReady()) {
       a11y.announce('인식 엔진을 준비하는 중입니다.');
@@ -173,6 +172,7 @@ async function start(source, file) {
     state.lastOcrAt = 0;
     subtitle.markGap();
     tts.clear();
+    tts.unlock();
 
     $('home').hidden = true;
     $('stage').hidden = false;
@@ -181,8 +181,9 @@ async function start(source, file) {
     await keepAwake();
 
     a11y.setStatus('찾는 중');
-    a11y.announce('노란 칸에 자막을 맞추세요. 한글 자막만 읽습니다.', 'assertive');
+    a11y.announce('자막 읽기를 시작합니다.', 'assertive');
     a11y.vibrate([20, 40, 20]);
+    tts.enqueue('자막 읽기를 시작합니다', state.settings);
     loop(performance.now());
   } catch (err) {
     console.error(err);
@@ -323,11 +324,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=17', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=18', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v17')) return;
-      sessionStorage.setItem('sw-reloaded-v17', '1');
+      if (sessionStorage.getItem('sw-reloaded-v18')) return;
+      sessionStorage.setItem('sw-reloaded-v18', '1');
       location.reload();
     });
   } catch {

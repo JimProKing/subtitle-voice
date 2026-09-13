@@ -108,10 +108,12 @@ function pickCaption(lines) {
     })
     .sort((a, b) => a.y - b.y);
 
-  if (!scored.length) return { text: '', confidence: 0 };
+  const usable = scored.filter((l) => l.hangul >= 4 && l.y < 0.94);
+  const pool = usable.length ? usable : scored.filter((l) => l.hangul >= 4);
+  if (!pool.length) return { text: '', confidence: 0 };
 
-  const lowest = scored.reduce((a, b) => (a.y >= b.y ? a : b));
-  const cluster = scored
+  const lowest = pool.reduce((a, b) => (a.y >= b.y ? a : b));
+  const cluster = pool
     .filter((l) => Math.abs(l.y - lowest.y) < 0.14)
     .sort((a, b) => a.y - b.y || (a.x || 0) - (b.x || 0));
   const text = cluster.map((l) => l.text).join(' ');

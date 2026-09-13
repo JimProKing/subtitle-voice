@@ -6,7 +6,6 @@ let current = null;
 let speakToken = 0;
 let player = null;
 let lastError = '';
-const waiting = [];
 let onChange = () => {};
 
 const SILENCE =
@@ -28,8 +27,8 @@ export function unlock() {
   const kick = player.play();
   if (kick && kick.catch) kick.catch(() => {});
   try {
-    const warm = new SpeechSynthesisUtterance(' ');
-    warm.volume = 0;
+    const warm = new SpeechSynthesisUtterance('시작합니다');
+    warm.volume = 0.01;
     warm.lang = 'ko-KR';
     window.speechSynthesis.speak(warm);
     window.speechSynthesis.cancel();
@@ -42,44 +41,27 @@ export function status() {
   return {
     speaking,
     current: current ? current.text : '',
-    pending: waiting.map((p) => p.text),
-    waiting: waiting.length,
+    pending: [],
+    waiting: 0,
     error: lastError,
   };
+}
+
+export function isSpeaking() {
+  return speaking;
 }
 
 export function enqueue(text, { gender, age, rate }) {
   const clean = String(text || '').trim();
   if (!clean) return false;
-
   if (current && related(clean, current.text) !== 'new') return false;
-
-  for (let i = 0; i < waiting.length; i++) {
-    if (related(clean, waiting[i].text) === 'new') continue;
-    if (compact(clean).length > compact(waiting[i].text).length) {
-      waiting[i].text = clean;
-      waiting[i].blob = null;
-      waiting[i].ready = fetchAudio(waiting[i]);
-      notify();
-    }
-    return false;
-  }
-
-  if (waiting.length >= 2) return false;
-
-  const voice = mixVoice(gender, age);
-  const item = {
+  speakNow({
     text: clean,
-    voice,
+    voice: mixVoice(gender, age),
     rate: Number(rate) || 1.15,
     gender,
     age,
-    blob: null,
-  };
-  item.ready = fetchAudio(item);
-  waiting.push(item);
-  notify();
-  pump();
+  });
   return true;
 }
 
@@ -91,17 +73,13 @@ export function speakSample({ gender, age, rate }) {
       : gender === 'female'
         ? '안녕하세요. 여성 목소리로 읽습니다.'
         : '안녕하세요. 이 목소리로 읽습니다.';
-  clear();
-  waiting.push({
+  speakNow({
     text: `${voice.label}. ${line}`,
     voice,
     rate: Number(rate) || 1.15,
     gender,
     age,
-    blob: null,
   });
-  waiting[0].ready = fetchAudio(waiting[0]);
-  pump();
   return describeChoice(voice);
 }
 
@@ -110,11 +88,10 @@ export function describeChoice(preset) {
 }
 
 export function clear() {
-  waiting.length = 0;
   current = null;
   speaking = false;
   speakToken += 1;
-  stopPlayer();
+  lastError = '';
   try {
     window.speechSynthesis.cancel();
   } catch {
@@ -123,53 +100,31 @@ export function clear() {
   notify();
 }
 
-function compact(text) {
-  return String(text).replace(/\s+/g, '');
-}
-
-function pump() {
-  if (speaking || current) return;
-  const item = waiting.shift();
-  if (!item) {
-    notify();
-    return;
-  }
-  speakNow(item);
-}
-
-async function fetchAudio(item) {
-  const gender = item.gender || item.voice.gender;
-  const age = item.age || item.voice.age;
-  const rate = Number(item.rate) || 1.15;
-  const ctrl = new AbortController();
-  const timer = window.setTimeout(() => ctrl.abort(), 10000);
-  try {
-    const res = await fetch('/api/tts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: item.text, gender, age, speed: rate }),
-      signal: ctrl.signal,
-    });
-    if (!res.ok) throw new Error(`tts ${res.status}`);
-    const blob = await res.blob();
-    if (!blob || blob.size < 200) throw new Error('empty-audio');
-    item.blob = blob;
-    return blob;
-  } finally {
-    window.clearTimeout(timer);
-  }
-}
-
 async function speakNow(item) {
   const my = ++speakToken;
   current = item;
   speaking = true;
   lastError = '';
   notify();
+  const gender = item.gender || item.voice.gender;
+  const age = item.age || item.voice.age;
   const rate = Number(item.rate) || 1.15;
+
   try {
-    const blob = item.blob || (await item.ready);
+    const ctrl = new AbortController();
+    const timer = window.setTimeout(() => ctrl.abort(), 10000);
+    const res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: item.text, gender, age, speed: rate }),
+      signal: ctrl.signal,
+    });
+    window.clearTimeout(timer);
     if (my !== speakToken) return;
+    if (!res.ok) throw new Error(`tts ${res.status}`);
+    const blob = await res.blob();
+    if (my !== speakToken) return;
+    if (!blob || blob.size < 200) throw new Error('empty-audio');
     await playBlob(blob, my);
   } catch (err) {
     console.error(err);
@@ -189,16 +144,20 @@ function playBlob(blob, my) {
       if (settled) return;
       settled = true;
       URL.revokeObjectURL(src);
-      player.onended = null;
-      player.onerror = null;
       if (err) reject(err);
       else resolve();
     };
     player.onended = () => {
+      player.onended = null;
+      player.onerror = null;
       if (my === speakToken) finish();
       done();
     };
-    player.onerror = () => done(new Error('play-error'));
+    player.onerror = () => {
+      player.onended = null;
+      player.onerror = null;
+      done(new Error('play-error'));
+    };
     player.muted = false;
     player.volume = 1;
     player.src = src;
@@ -209,7 +168,6 @@ function playBlob(blob, my) {
 
 function speakDevice(item, my, rate) {
   try {
-    window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(item.text);
     u.lang = 'ko-KR';
     u.rate = Math.max(0.7, Math.min(1.6, rate));
@@ -240,22 +198,10 @@ function ensurePlayer() {
   player.setAttribute('webkit-playsinline', '');
 }
 
-function stopPlayer() {
-  if (!player) return;
-  try {
-    player.pause();
-    player.onended = null;
-    player.onerror = null;
-  } catch {
-    /* ignore */
-  }
-}
-
 function finish() {
   speaking = false;
   current = null;
   notify();
-  pump();
 }
 
 function notify() {
