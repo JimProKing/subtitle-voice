@@ -301,11 +301,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=13', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=14', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v13')) return;
-      sessionStorage.setItem('sw-reloaded-v13', '1');
+      if (sessionStorage.getItem('sw-reloaded-v14')) return;
+      sessionStorage.setItem('sw-reloaded-v14', '1');
       location.reload();
     });
   } catch {

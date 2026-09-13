@@ -47,9 +47,7 @@ function startPython() {
     console.error('ocr_worker exit', code);
     py = null;
     ready = false;
-    while (waiters.length) {
-      waiters.shift().reject(new Error('ocr worker exit'));
-    }
+    while (waiters.length) waiters.shift().reject(new Error('ocr worker exit'));
   });
 }
 
@@ -88,14 +86,40 @@ export async function readSubtitle(dataUrl) {
   if (await ensureOcr()) {
     const line = await send(dataUrl);
     const parsed = JSON.parse(line);
-    if (parsed.ok) return { text: parsed.text || '', confidence: parsed.confidence || 0, engine: 'paddle' };
+    if (parsed.ok) {
+      const picked = pickCaption(parsed.lines || []);
+      return { text: picked.text, confidence: picked.confidence, engine: 'paddle' };
+    }
   }
   return tesseractFallback(dataUrl);
 }
 
+function pickCaption(lines) {
+  const scored = lines
+    .map((l) => {
+      const hangul = (String(l.text).match(/[\uAC00-\uD7A3]/g) || []).length;
+      return { ...l, hangul };
+    })
+    .filter((l) => {
+      if (l.hangul < 2) return false;
+      if (/\d+\/\d+/.test(l.text)) return false;
+      if (/면장면|구독|좋아요/.test(l.text)) return false;
+      return true;
+    })
+    .sort((a, b) => a.y - b.y);
+
+  if (!scored.length) return { text: '', confidence: 0 };
+
+  const best = scored.reduce((a, b) => (b.hangul > a.hangul ? b : a));
+  const cluster = scored.filter((l) => Math.abs(l.y - best.y) < 0.18);
+  const text = cluster.map((l) => l.text).join(' ');
+  const conf = Math.round(100 * (cluster.reduce((s, l) => s + l.conf, 0) / cluster.length));
+  return { text, confidence: conf };
+}
+
 function send(dataUrl) {
   return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('ocr timeout')), 20000);
+    const t = setTimeout(() => reject(new Error('ocr timeout')), 12000);
     waiters.push({
       resolve: (line) => {
         clearTimeout(t);

@@ -98,8 +98,9 @@ function mergeSplitHangul(text) {
 
 function hangulLine(text) {
   return text
-    .split(' ')
+    .split(/\s+/)
     .filter((tok) => {
+      if (/면장면|구독|좋아요/.test(tok)) return false;
       const h = (tok.match(/[\uAC00-\uD7A3]/g) || []).length;
       const rest = tok.replace(/[\uAC00-\uD7A3?!,.]/g, '');
       return h >= 1 && rest.length === 0;

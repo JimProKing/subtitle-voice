@@ -37,14 +37,16 @@ export async function recognizeFrame(srcCanvas) {
 }
 
 function frameJpeg(src) {
-  const maxW = 720;
+  const top = Math.round(src.height * 0.34);
+  const cropH = Math.max(8, src.height - top);
+  const maxW = 560;
   const scale = Math.min(1, maxW / src.width);
   const w = Math.max(2, Math.round(src.width * scale));
-  const h = Math.max(2, Math.round(src.height * scale));
+  const h = Math.max(2, Math.round(cropH * scale));
   const c = document.createElement('canvas');
   c.width = w;
   c.height = h;
   const ctx = c.getContext('2d');
-  ctx.drawImage(src, 0, 0, w, h);
-  return c.toDataURL('image/jpeg', 0.72);
+  ctx.drawImage(src, 0, top, src.width, cropH, 0, 0, w, h);
+  return c.toDataURL('image/jpeg', 0.55);
 }

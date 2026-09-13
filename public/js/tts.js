@@ -57,14 +57,16 @@ export function enqueue(text, { gender, age, rate }) {
   if (current && same(current.text, clean)) return false;
   if (pending.some((p) => same(p.text, clean))) return false;
   const voice = mixVoice(gender, age);
-  pending.push({
+  const item = {
     text: clean,
     voice,
     rate: Number(rate) || 1.15,
     gender,
     age,
-  });
-  while (pending.length > 2) pending.shift();
+    blob: null,
+  };
+  item.ready = fetchAudio(item);
+  pending.push(item);
   notify();
   pump();
   return true;
@@ -79,13 +81,17 @@ export function speakSample({ gender, age, rate }) {
         ? '안녕하세요. 여성 목소리로 읽습니다.'
         : '안녕하세요. 이 목소리로 읽습니다.';
   clear();
-  speakNow({
+  const item = {
     text: `${voice.label}. ${line}`,
     voice,
     rate: Number(rate) || 1.15,
     gender,
     age,
-  });
+    blob: null,
+  };
+  item.ready = fetchAudio(item);
+  pending.push(item);
+  pump();
   return describeChoice(voice);
 }
 
@@ -117,30 +123,39 @@ function pump() {
   speakNow(item);
 }
 
-async function speakNow(item) {
-  const my = ++speakToken;
-  current = item;
-  speaking = true;
-  lastError = '';
-  notify();
+async function fetchAudio(item) {
   const gender = item.gender || item.voice.gender;
   const age = item.age || item.voice.age;
   const rate = Number(item.rate) || 1.15;
-
+  const ctrl = new AbortController();
+  const timer = window.setTimeout(() => ctrl.abort(), 12000);
   try {
-    const ctrl = new AbortController();
-    const timer = window.setTimeout(() => ctrl.abort(), 12000);
     const res = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text: item.text, gender, age, speed: rate }),
       signal: ctrl.signal,
     });
-    window.clearTimeout(timer);
     if (!res.ok) throw new Error(`tts ${res.status}`);
     const blob = await res.blob();
-    if (my !== speakToken) return;
     if (!blob || blob.size < 200) throw new Error('empty-audio');
+    item.blob = blob;
+    return blob;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+async function speakNow(item) {
+  const my = ++speakToken;
+  current = item;
+  speaking = true;
+  lastError = '';
+  notify();
+  const rate = Number(item.rate) || 1.15;
+  try {
+    const blob = item.blob || (await item.ready);
+    if (my !== speakToken) return;
     await playBlob(blob, my);
   } catch (err) {
     console.error(err);
