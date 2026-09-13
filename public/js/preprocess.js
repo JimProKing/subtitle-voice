@@ -3,6 +3,7 @@ import { CONFIG } from './config.js';
 const work = {
   crop: null,
   binary: null,
+  gray: null,
 };
 
 function canvas(store, w, h) {
@@ -35,6 +36,8 @@ export function prepare(srcCanvas, which) {
   cctx.drawImage(srcCanvas, band.x, band.y, band.w, band.h, 0, 0, dw, dh);
 
   const image = cctx.getImageData(0, 0, dw, dh);
+  const gray = canvas('gray', dw, dh);
+  paintContrastGray(gray.getContext('2d', { willReadFrequently: true }), image);
   const { bin, textPx } = toBinary(image);
   const closed = morphClose(bin, dw, dh);
   const ratio = textPx / (dw * dh);
@@ -47,7 +50,8 @@ export function prepare(srcCanvas, which) {
   paintBlackOnWhite(octx, boxed ? boxed.bin : closed, out.width, out.height);
 
   return {
-    canvas: out,
+    canvas: gray,
+    binary: out,
     fingerprint,
     empty,
     ratio,
@@ -63,6 +67,45 @@ export function sad(a, b) {
   return sum / a.length;
 }
 
+function paintContrastGray(ctx, image) {
+  const { data, width, height } = image;
+  const lum = new Uint8Array(width * height);
+  let sum = 0;
+  for (let i = 0, p = 0; i < data.length; i += 4, p++) {
+    const v = (data[i] * 77 + data[i + 1] * 150 + data[i + 2] * 29) >> 8;
+    lum[p] = v;
+    sum += v;
+  }
+  const mean = sum / lum.length;
+  const hist = new Uint32Array(256);
+  for (let p = 0; p < lum.length; p++) hist[lum[p]]++;
+  const lo = percentile(hist, lum.length, 0.08);
+  const hi = Math.max(lo + 8, percentile(hist, lum.length, 0.92));
+  const invert = mean < 150;
+  const out = ctx.createImageData(width, height);
+  const d = out.data;
+  const span = hi - lo;
+  for (let p = 0, i = 0; p < lum.length; p++, i += 4) {
+    let v = Math.round(((lum[p] - lo) * 255) / span);
+    if (v < 0) v = 0;
+    if (v > 255) v = 255;
+    if (invert) v = 255 - v;
+    d[i] = d[i + 1] = d[i + 2] = v;
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(out, 0, 0);
+}
+
+function percentile(hist, total, q) {
+  const target = total * q;
+  let acc = 0;
+  for (let i = 0; i < 256; i++) {
+    acc += hist[i];
+    if (acc >= target) return i;
+  }
+  return 255;
+}
+
 function toBinary(image) {
   const { data, width, height } = image;
   const lum = new Uint8Array(width * height);
@@ -76,7 +119,7 @@ function toBinary(image) {
     for (let x = 2; x < width - 2; x++) {
       const p = y * width + x;
       const v = lum[p];
-      if (v < 176) continue;
+      if (v < 150) continue;
       let dark = false;
       scan: for (let dy = -2; dy <= 2; dy++) {
         for (let dx = -2; dx <= 2; dx++) {
@@ -86,7 +129,7 @@ function toBinary(image) {
           }
         }
       }
-      if (v >= 205 || dark) {
+      if (v >= 185 || dark) {
         bin[p] = 1;
         textPx++;
       }
@@ -97,7 +140,7 @@ function toBinary(image) {
     textPx = 0;
     bin.fill(0);
     for (let p = 0; p < lum.length; p++) {
-      if (lum[p] >= 200) {
+      if (lum[p] >= 170) {
         bin[p] = 1;
         textPx++;
       }

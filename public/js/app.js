@@ -19,6 +19,7 @@ const state = {
   frameCanvas: document.createElement('canvas'),
   raf: 0,
   lastSample: 0,
+  lastOcrAt: 0,
   wakeLock: null,
 };
 
@@ -179,6 +180,7 @@ async function start(source, file) {
     state.stableCount = 0;
     state.didOcrThisStable = false;
     state.emptyCount = 0;
+    state.lastOcrAt = 0;
     subtitle.markGap();
     tts.clear();
 
@@ -235,7 +237,11 @@ function loop(now) {
     state.settings.regionMode,
     state.settings.regionMode === 'top' ? 'top' : 'bottom'
   );
-  track(pickRegion(state.frameCanvas), now);
+  const prepared = pickRegion(state.frameCanvas);
+  if (!ocr.isBusy() && now - state.lastOcrAt >= CONFIG.ocrIntervalMs) {
+    state.lastOcrAt = now;
+    runOcr(prepared);
+  }
 }
 
 function pickRegion(frame) {
@@ -247,43 +253,23 @@ function pickRegion(frame) {
   return preprocess.prepare(frame, 'top');
 }
 
-function track(prepared, now) {
-  const dist = preprocess.sad(prepared.fingerprint, state.lastFp);
-
-  if (dist >= CONFIG.sadChanged) {
-    state.lastFp = prepared.fingerprint;
-    state.stableCount = 0;
-    state.didOcrThisStable = false;
-    state.stableSince = now;
-  } else if (dist < CONFIG.sadStable) {
-    state.stableCount += 1;
-    if (state.stableCount === 1) state.stableSince = now;
-  } else {
-    state.lastFp = prepared.fingerprint;
-    state.stableCount = 0;
-    state.didOcrThisStable = false;
-  }
-
-  if (prepared.empty) {
-    state.emptyCount += 1;
-    if (state.emptyCount > 8) subtitle.markGap();
-    return;
-  }
-  state.emptyCount = 0;
-
-  if (state.stableCount >= CONFIG.stableFrames && !state.didOcrThisStable && !ocr.isBusy()) {
-    state.didOcrThisStable = true;
-    runOcr(prepared);
-  }
-}
-
 async function runOcr(prepared) {
   try {
     const result = await ocr.recognize(prepared.canvas);
     if (!state.running || !result) return;
+    const raw = (result.text || '').replace(/\s+/g, ' ').trim();
     const parsed = subtitle.parse(result.text, result.confidence);
-    if (!parsed) return;
-    if (subtitle.isDuplicate(parsed.speakText)) return;
+    const conf = Math.round(result.confidence);
+    if (!parsed) {
+      $('now-meta').textContent = raw
+        ? `인식 ${conf}점 · ${raw.slice(0, 36)}`
+        : `인식 ${conf}점 · 칸에서 글자를 못 찾음`;
+      return;
+    }
+    if (subtitle.isDuplicate(parsed.speakText)) {
+      $('now-meta').textContent = `이미 읽음 · ${parsed.speakText.slice(0, 24)}`;
+      return;
+    }
 
     const added = tts.enqueue(parsed.speakText, state.settings);
     if (!added) return;
@@ -292,7 +278,7 @@ async function runOcr(prepared) {
     a11y.vibrate(10);
   } catch (err) {
     console.error(err);
-    state.didOcrThisStable = false;
+    $('now-meta').textContent = '인식 엔진 오류';
   }
 }
 
@@ -342,11 +328,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=5', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=6', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v5')) return;
-      sessionStorage.setItem('sw-reloaded-v5', '1');
+      if (sessionStorage.getItem('sw-reloaded-v6')) return;
+      sessionStorage.setItem('sw-reloaded-v6', '1');
       location.reload();
     });
   } catch {

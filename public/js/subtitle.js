@@ -5,10 +5,11 @@ let lastSpokenAt = 0;
 const recent = [];
 
 export function parse(raw, confidence) {
-  if (confidence < CONFIG.minConfidence) return null;
   const cleaned = clean(raw);
   if (!cleaned) return null;
   if (!isKoreanSubtitle(cleaned)) return null;
+  const hangul = (cleaned.match(/[\uAC00-\uD7A3]/g) || []).length;
+  if (confidence < CONFIG.minConfidence && hangul < 4) return null;
 
   const named = cleaned.match(/^([가-힣A-Za-z]{1,10})\s*[:：]\s*(.+)$/);
   if (named) {

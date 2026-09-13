@@ -39,6 +39,8 @@ export async function startCamera() {
   video.srcObject = stream;
   video.muted = true;
   video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
   await video.play();
   await waitForFrame(video);
   return { source: 'camera' };
@@ -53,6 +55,8 @@ export async function startFile(file) {
   video.muted = true;
   video.loop = true;
   video.playsInline = true;
+  video.setAttribute('playsinline', '');
+  video.setAttribute('webkit-playsinline', '');
   await video.play();
   await waitForFrame(video);
   return { source: 'file' };
@@ -60,6 +64,9 @@ export async function startFile(file) {
 
 export function drawFrame(canvas, maxWidth = 1280) {
   const video = els().video;
+  if (video.paused && video.readyState >= 2) {
+    video.play().catch(() => {});
+  }
   if (!video.videoWidth) return false;
   const scale = Math.min(1, maxWidth / video.videoWidth);
   const w = Math.max(2, Math.round(video.videoWidth * scale));

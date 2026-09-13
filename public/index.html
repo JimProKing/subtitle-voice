@@ -12,7 +12,7 @@
     <link rel="manifest" href="/manifest.json" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/icon-512.jpg" />
-    <link rel="stylesheet" href="/css/app.css?v=5" />
+    <link rel="stylesheet" href="/css/app.css?v=6" />
   </head>
   <body>
     <a class="skip" href="#main">본문으로 건너뛰기</a>
@@ -33,9 +33,9 @@
 
       <main id="main">
         <section id="home" class="home">
-          <p class="home-title">극장 자막을<br />소리로</p>
+          <p class="home-title">시각장애인 용<br />자막 TTS 웹앱</p>
           <p id="engine-state" class="engine">준비 중</p>
-          <p class="engine" id="app-version">v5</p>
+          <p class="engine" id="app-version">v6</p>
           <div class="stack-actions">
             <div class="action-row">
               <button type="button" class="full primary" id="btn-start-camera" aria-label="시작">시작</button>
@@ -175,15 +175,12 @@
 
     <dialog id="help-dialog" class="sheet help-sheet">
       <form method="dialog" class="sheet-inner">
-        <div class="sheet-head">
-          <h2>사용법</h2>
-          <button type="submit" class="full" value="close" aria-label="설명 닫기">닫기</button>
-        </div>
+        <h2>사용법</h2>
         <p id="help-body" class="help-text"></p>
         <button type="submit" class="primary" value="close">닫기</button>
       </form>
     </dialog>
 
-    <script type="module" src="/js/app.js?v=5"></script>
+    <script type="module" src="/js/app.js?v=6"></script>
   </body>
 </html>
