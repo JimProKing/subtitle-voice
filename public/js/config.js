@@ -44,13 +44,19 @@ export const DEFAULTS = {
   previewOn: true,
 };
 
+const SPEAKER = {
+  male: { child: '브라이언', young: '인준', middle: '앤드류', elder: '윌리엄' },
+  female: { child: '엠마', young: '선희', middle: '에이바', elder: '세라피나' },
+  neutral: { child: '주세페', young: '현수', middle: '레미', elder: '플로리안' },
+};
+
 export function mixVoice(gender, age) {
   const g = GENDER[gender] || GENDER.male;
   const a = AGE[age] || AGE.young;
-  const engine = g.id === 'male' ? '인준' : g.id === 'female' ? '선희' : '현수';
+  const speaker = (SPEAKER[g.id] || SPEAKER.male)[a.id] || SPEAKER.male.young;
   return {
     gender: g.id,
     age: a.id,
-    label: `${g.label} · ${a.label} · ${engine}`,
+    label: `${g.label} · ${a.label} · ${speaker}`,
   };
 }
