@@ -1,4 +1,4 @@
-const CACHE = 'subtitle-voice-v2';
+const CACHE = 'subtitle-voice-v3';
 const PRECACHE = [
   '/',
   '/index.html',

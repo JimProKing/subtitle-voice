@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
+const APP_VERSION = process.env.APP_VERSION || '3';
 const TESSDATA_DIR = path.join(__dirname, 'public', 'tessdata');
 const TESSDATA_FILE = path.join(TESSDATA_DIR, 'kor.traineddata.gz');
 const TESSDATA_URLS = [
@@ -16,7 +17,10 @@ const app = express();
 
 app.disable('x-powered-by');
 app.get('/health', (_req, res) => {
-  res.json({ ok: true, tessdata: fs.existsSync(TESSDATA_FILE) });
+  res.json({ ok: true, version: APP_VERSION, tessdata: fs.existsSync(TESSDATA_FILE) });
+});
+app.get('/version', (_req, res) => {
+  res.json({ ok: true, version: APP_VERSION });
 });
 
 app.use(
@@ -43,7 +47,12 @@ app.use(
 );
 app.use(
   express.static(path.join(__dirname, 'public'), {
-    maxAge: process.env.NODE_ENV === 'production' ? '1h' : 0,
+    etag: true,
+    setHeaders(res, filePath) {
+      if (/\.(html|js|css)$/i.test(filePath)) {
+        res.setHeader('Cache-Control', 'no-cache');
+      }
+    },
   })
 );
 
