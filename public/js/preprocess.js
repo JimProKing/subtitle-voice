@@ -112,8 +112,8 @@ function extractCaption(image) {
     const g = data[i + 1];
     const b = data[i + 2];
     const lum = (r * 77 + g * 150 + b * 29) >> 8;
-    const yellow = r > 165 && g > 135 && b < Math.min(r, g) * 0.82;
-    const white = lum > 198 && Math.abs(r - g) < 38 && Math.abs(g - b) < 42;
+    const yellow = r > 145 && g > 115 && r + g > b * 1.8;
+    const white = lum > 162;
     if (yellow || white) {
       bin[p] = 1;
       textPx++;

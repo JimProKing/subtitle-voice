@@ -6,7 +6,7 @@ import { synthesize } from './tts-engine.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
-const APP_VERSION = process.env.APP_VERSION || '11';
+const APP_VERSION = process.env.APP_VERSION || '12';
 const TESSDATA_DIR = path.join(__dirname, 'public', 'tessdata');
 const TESSDATA_FILE = path.join(TESSDATA_DIR, 'kor.traineddata.gz');
 const TESSDATA_URLS = [

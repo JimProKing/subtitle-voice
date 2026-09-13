@@ -106,12 +106,6 @@ function applyScale() {
 
 function applyRegionClass() {
   document.body.classList.toggle('region-top', state.settings.regionMode === 'top');
-  const hint = $('zone-hint-text');
-  if (hint) {
-    hint.textContent = state.settings.regionMode === 'top'
-      ? '위 자막을 노란 칸에 맞추세요'
-      : '자막을 노란 칸에 맞추세요';
-  }
 }
 
 function paintSettings() {
@@ -226,12 +220,6 @@ function loop(now) {
   state.lastSample = now;
 
   if (!camera.drawFrame(state.frameCanvas)) return;
-  preprocess.drawGuides(
-    $('overlay'),
-    state.frameCanvas,
-    state.settings.regionMode,
-    state.settings.regionMode === 'top' ? 'top' : 'bottom'
-  );
   const prepared = pickRegion(state.frameCanvas);
   if (!ocr.isBusy() && now - state.lastOcrAt >= CONFIG.ocrIntervalMs) {
     state.lastOcrAt = now;
@@ -265,11 +253,6 @@ async function runOcr(prepared) {
       $('now-meta').textContent = `이미 읽음`;
       return;
     }
-    if (!subtitle.confirmed(parsed.speakText)) {
-      $('now-meta').textContent = `확인 중 · ${parsed.speakText.slice(0, 28)}`;
-      return;
-    }
-
     const added = tts.enqueue(parsed.speakText, state.settings);
     if (!added) return;
     subtitle.remember(parsed.speakText);
@@ -328,11 +311,11 @@ async function onVisibility() {
 async function registerSw() {
   if (!('serviceWorker' in navigator)) return;
   try {
-    const reg = await navigator.serviceWorker.register('/sw.js?v=11', { updateViaCache: 'none' });
+    const reg = await navigator.serviceWorker.register('/sw.js?v=12', { updateViaCache: 'none' });
     await reg.update();
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (sessionStorage.getItem('sw-reloaded-v11')) return;
-      sessionStorage.setItem('sw-reloaded-v11', '1');
+      if (sessionStorage.getItem('sw-reloaded-v12')) return;
+      sessionStorage.setItem('sw-reloaded-v12', '1');
       location.reload();
     });
   } catch {
